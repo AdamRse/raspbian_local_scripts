@@ -1,0 +1,56 @@
+#status{
+    
+}
+#status .allumee{
+    
+}
+body{
+    background-color: #000;
+    color: #fff;
+}
+#status .eteinte{
+    
+}
+.btSwitch{
+    padding: 50px 100px;
+}
+
+.bouton{
+    display: inline-block;
+    height: 45px;
+    width: 45px;
+    margin: 10px;
+    border-radius: 100%;
+    cursor: pointer;
+}
+.vert-run{
+    background-color: #75f251;
+    box-shadow: 0 0 30px #75f251;
+    border: 3px solid #51a938;
+}
+.vert-stop{
+    background-color: #2e6020;
+    box-shadow: none;
+    border: 3px solid #51a938;
+}
+.rouge-run{
+    background-color: #f25151;
+    box-shadow: 0px 0px 30px #f25151;
+    border: 3px solid #a93838;
+}
+.rouge-stop{
+    background-color: #792828;
+    box-shadow: none;
+    border: 3px solid #a93838;
+}
+.orange-run{
+    background-color: #f2ef51;
+    box-shadow: 0px 0px 30px #f2ef51;
+    border: 3px solid #a9a738;
+}
+.orange-stop{
+    background-color: #797728;
+    box-shadow: none;
+    border: 3px solid #a9a738;
+}
+

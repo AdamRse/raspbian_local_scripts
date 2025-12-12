@@ -1,0 +1,103 @@
+span.actif{
+    color: #080;
+}
+span.inactif{
+    color: #800;
+}
+span.warning{
+    color: #c07428;
+}
+ul h2{
+    padding: 0;
+    margin: 0;
+    font-size: 1.2em;
+}
+
+/*    */
+#contGraph{
+    position: relative;
+    height: 25vx;
+    width: 100%;
+    font-size: 0;
+    overflow: hidden;
+}
+#contGraph div{
+    display: inline-block;
+}
+#contGraph .top{
+    height: 2vw;
+    width: 100%;
+    background-color: #fee;
+    font-size: 1.2rem;
+    overflow: hidden;
+}
+#contGraph .top .ordonnee_nom{
+    text-align: left;
+    font-size: 1rem;
+}
+#contGraph .top .titre{
+    font-size: 2rem;
+    float: right;
+    margin-right: 40%;
+}
+#contGraph .gauche{
+    height: 12vw;
+    width: 5%;
+    background-color: #eff;
+    float: left;
+    overflow: hidden;
+}
+#contGraph .gauche .echelle{
+    height: 12vw;
+    border-right: 1px solid #000;
+    width: 100%;
+    float: right;
+}
+#contGraph .gauche .echelle .ordonnee_val{
+    height: 10vw;
+    background-color: #ccc;
+    width: 100%;
+    margin-top: 2vw;
+    text-align: right;
+    font-size: 1rem;
+}
+#contGraph .gauche .echelle .ordonnee_val .contVal{
+    border-top: 1px solid #000;
+    display: block;
+}
+#contGraph .gauche .echelle .ordonnee_val .contVal .val{
+    overflow: hidden;
+}
+#contGraph .droite{
+    position: relative;
+    height: 12vw;
+    width: 95%;
+    background-color: #ffe;
+    float: right;
+}
+#graph{
+    margin: 0 auto;
+    width: 100%;
+    height: 10vw;
+    overflow: hidden;
+}
+#graph .barre{
+    margin: 0;
+    padding: 0;
+    display: inline-block;
+    vertical-align: bottom;
+    font-size: 0;
+    
+}
+#graph .froid{
+    background-color: #080;
+}
+#graph .tiede{
+    background-color: #c07428;
+}
+#graph .chaud{
+    background-color: #800;
+}
+#donnees{
+    display: none;
+}
