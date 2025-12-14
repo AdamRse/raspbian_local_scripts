@@ -1,9 +1,9 @@
 <?php
-require '/var/www/bibliotheque/pi/intrusion.php';
-if(!intrus){
-    $msqli=new mysqli("localhost", "raspi", "", "raspi_general");
-    $rqSkip=$msqli->query("SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_skip'");
-    $skip=(int)$rqSkip->fetch_row()[0];
+//if(!intrus){
+//    $msqli=new mysqli("localhost", "raspi", "", "raspi_general");
+//    $rqSkip=$msqli->query("SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_skip'");
+//    $skip=(int)$rqSkip->fetch_row()[0];
+$skip=0;
 ?>
 <!DOCTYPE html>
 <html>
@@ -31,4 +31,4 @@ if(!intrus){
 </body>
 </html>
 <?php
-}
+//}

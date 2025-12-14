@@ -1,7 +1,5 @@
 <?php
-require '/var/www/bibliotheque/pi/intrusion.php';
-
-if(!intrus){
+//if(!intrus){
     $stat=0;
     if(file_exists("/sys/class/gpio/gpio3/value")){
         $val = exec('echo $(cat /sys/class/gpio/gpio3/value)');
@@ -11,4 +9,4 @@ if(!intrus){
             $stat=1;
     }
     echo $stat;
-}
+//}
