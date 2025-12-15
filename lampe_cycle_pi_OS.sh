@@ -86,11 +86,9 @@ while $run; do
       then
         if $allumer; then
           echo "[ALLUMAGE]"
-          echo "2" > /sys/class/gpio/export
           bash /home/adam/dev/projets/raspbian_local_scripts/lampe_switch_pi_OS.sh 22 1
         else
           echo "[ARRET]"
-          echo "2" > /sys/class/gpio/export
           bash /home/adam/dev/projets/raspbian_local_scripts/lampe_switch_pi_OS.sh 22 0
         fi
         else

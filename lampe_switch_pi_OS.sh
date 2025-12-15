@@ -35,9 +35,9 @@ if [ -z "$2" ]; then
   fi
 else
   if [ "$2" == "1" ]; then
-    echo "1" > /sys/class/gpio/gpio$GPIO_SYSFS/value
-  elif [ "$2" == "0" ]; then
     echo "0" > /sys/class/gpio/gpio$GPIO_SYSFS/value
+  elif [ "$2" == "0" ]; then
+    echo "1" > /sys/class/gpio/gpio$GPIO_SYSFS/value
   else
     echo "Argument $2 incompris"
   fi
