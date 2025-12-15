@@ -1,4 +1,6 @@
 #!/bin/bash
+#
+# service : lampe-cycle.service
 pid=$$
 allumer=false
 tempsAttente=2400
