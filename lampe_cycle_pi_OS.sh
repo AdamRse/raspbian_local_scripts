@@ -1,4 +1,4 @@
-#!bin/bash
+#!/bin/bash
 pid=$$
 allumer=false
 tempsAttente=2400
