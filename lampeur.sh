@@ -7,10 +7,8 @@
 SCRIPT_PATH=$(readlink -f "$0")
 ROOT_DIR=$(dirname "$SCRIPT_PATH")
 
-echo "Root dir : $ROOT_DIR"
-
 DEBUG_MODE=false
-SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh"
+SWITCH_SCRIPT_PATH=""
 
 run=true
 cycle=0
