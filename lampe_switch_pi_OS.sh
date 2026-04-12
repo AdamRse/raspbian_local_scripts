@@ -6,7 +6,11 @@
 ############
 
 # Conversion BCM vers SYSFS (nouvelle numérotation)
-GPIO_SYSFS=$((512 + ${1}))
+if [[ ${1} -gt 511 ]]; then
+    GPIO_SYSFS=${1}
+else
+    GPIO_SYSFS=$((512 + ${1}))
+fi
 
 # normal=true va servir à déterminer si le gpio a été fermé correctement de façon à éviter un double switch
 normal=true

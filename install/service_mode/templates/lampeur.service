@@ -1,0 +1,15 @@
+[Unit]
+Description=Gestion de la lampe pour raspberry pi
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=
+Group=
+Type=simple
+ExecStart=h
+Restart=on-failure
+WorkingDirectory=
+
+[Install]
+WantedBy=multi-user.target

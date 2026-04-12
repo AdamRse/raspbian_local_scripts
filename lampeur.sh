@@ -1,17 +1,29 @@
-#!bin/bash
+#!/bin/bash
 # Programme de gestion de cycle d'allumage et d'arrêt de lampe connectée au raspberri pi.
 # Concu pour fonctionner en tant que service systemd
 
 # -- VARIABLES --
 
 SCRIPT_PATH=$(readlink -f "$0")
-SCRIPT_DIR=$(dirname "$SCRIPT_PATH")
+ROOT_DIR=$(dirname "$SCRIPT_PATH")
+
+echo "Root dir : $ROOT_DIR"
+
+DEBUG_MODE=false
+SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh"
+
 run=true
 cycle=0
 
-source "${SCRIPT_DIR}/.env"
-source "${SCRIPT_DIR}/fct/terminal-tools.fct.sh"
-source "${SCRIPT_DIR}/fct/lampe_cycle.fct.sh"
+source "${ROOT_DIR}/fct/common/terminal-tools.sh"
+source "${ROOT_DIR}/fct/common/common-tools.sh"
+source "${ROOT_DIR}/fct/lampeur.fct.sh"
+[[ -f "${ROOT_DIR}/.env" ]] && source "${ROOT_DIR}/.env"
+
+source "${ROOT_DIR}/src/opt-parser/lampeur.parser.sh"
+
+check_requirements
+set_check_globals
 
 switch_lampe
 sleep 1
@@ -26,5 +38,3 @@ while $run; do
     sunset_hour=${today_schedule[0]}
     twilight_hour=${today_schedule[1]}
 done
-
-
