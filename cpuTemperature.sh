@@ -3,8 +3,6 @@
 # Obtains the current value of the CPU temperature.
 #----------------------------------------------------------------------------------------
 
-#NOTE PUSH 2
-
 function get_cpu_temp()
 {
   # Initialize the result.
@@ -24,5 +22,5 @@ function get_cpu_temp()
 #----------------------------------------------------------------------------------------
 # Program to demonstrate how to obtain the current value of the CPU temperature.
 #----------------------------------------------------------------------------------------
-cputemp=$(get_cpu_temp)  
+cputemp=$(get_cpu_temp)
 echo Température du processeur \: $cputemp°C.
