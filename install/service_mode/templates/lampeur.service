@@ -4,11 +4,14 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-User=
-Group=
+User=raspi
+Group=raspi
 Type=simple
 ExecStart=h
 Restart=on-failure
+RestartSec=3600
+StartLimitIntervalSec=86400
+StartLimitBurst=4
 WorkingDirectory=
 
 [Install]
