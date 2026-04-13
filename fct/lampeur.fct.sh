@@ -56,10 +56,33 @@ trigger_error_delay(){
 switch_lampe(){
     local force_switch=${1}
 
-    [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "switch_lampe() : Impossible de commuter la lampe, la variable '\$SWITCH_SCRIPT_PATH' du fichier .env n'est pas définie."
+    [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "${FUNCNAME}() : Impossible de commuter la lampe, la variable '\$SWITCH_SCRIPT_PATH' du fichier .env n'est pas définie."
     check_vars_exist "GPIO_ID"
 
     bash $SWITCH_SCRIPT_PATH $GPIO_ID $force_switch
+}
+
+# Gère l'ordre de marche ou d'arrêt après un délai, gère le SKIP
+# $1    : order_type        : 0|1   : Ordonne l'arrêt (0) ou l'allumage (1) de la lampe
+# $2    : waiting_time_sec  : int   : Délai en secondes après lequel le déclenchement sera fait
+# return true|exit
+order_next_switch(){
+    local order_type=${1}
+    local waiting_time_sec=${2}
+    [[ ! $SKIP =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP non initialisée. Initialisation à 0" && SKIP=0
+    [[ ! $order_type =~ ^0|1$ ]] && eout "${FUNCNAME}() : Argument 1 passé (order_type='${order_type}') doit être 0 ou 1. Ordre incohérent, arrêt du script..."
+    [[ ! $waiting_time_sec =~ ^[0-9]{1,4}$ ]] && eout "${FUNCNAME}() : Argument 2 passé (waiting_time_sec='${waiting_time_sec}') doit être entre 0 et 9999. Ordre incohérent, arrêt du script..."
+
+    debug_ "Pause de $waiting_time_sec secondes avant d'effectuer l'ordre"
+    sleep $waiting_time_sec
+    if (( SKIP > 0 )); then
+        debug_ "SKIP détecté : ${SKIP} restant(s), ordre repoussé."
+        SKIP=$(( SKIP - 1))
+    else
+        debug_ "Switch de la lampe à ${order_type}"
+        switch_lampe $order_type
+    fi
+    return 0
 }
 
 # return "<mode de cycle 0, 1, 2> <décallage ensecodnes>"|false
@@ -69,11 +92,11 @@ get_opt(){
             echo $options
             return 0
         else
-            wout "get_opt() : Impossible de récupérer les options"
+            wout "${FUNCNAME}() : Impossible de récupérer les options"
             return 1
         fi
     else
-        wout "get_opt() : La base de donnée renvoie une erreur"
+        wout "${FUNCNAME}() : La base de donnée renvoie une erreur"
         return 1
     fi
 }
@@ -128,11 +151,19 @@ get_todays_schedule(){
             echo $schedule
             return 0
         else
-            wout "get_todays_schedule() : Impossible de récupérer les horaires de la journée"
+            wout "${FUNCNAME}() : Impossible de récupérer les horaires de la journée"
             return 1
         fi
     else
-        wout "get_todays_schedule() : La base de donnée renvoie une erreur"
+        wout "${FUNCNAME}() : La base de donnée renvoie une erreur"
         return 1
     fi
+}
+
+get_ut_tomorrows_sunset(){
+    local ut_tomorrow=$(($(date +%s) + 86400))
+    ! schedule=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d @${ut_tomorrow} +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
+    [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
+    echo $(date -d ${schedule} +%s)
+    return 0
 }
