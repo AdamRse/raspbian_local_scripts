@@ -62,7 +62,7 @@ switch_lampe(){
     bash $SWITCH_SCRIPT_PATH $GPIO_ID $force_switch
 }
 
-# Gère l'ordre de marche ou d'arrêt après un délai, gère le SKIP
+# Gère l'ordre de marche ou d'arrêt après un délai, gère SKIP_ON, SKIP_OFF et SUSPEND_MODE
 # $1    : order_type        : 0|1   : Ordonne l'arrêt (0) ou l'allumage (1) de la lampe
 # $2    : waiting_time_sec  : int   : Délai en secondes après lequel le déclenchement sera fait
 # return true|exit
@@ -70,8 +70,11 @@ order_next_switch(){
     local order_type=${1}
     local waiting_time_sec=${2}
     local weather_delay_sec
+    local skip_order=false
+    [[ ! $SUSPEND_MODE =~ ^0|1$ ]] && wout "${FUNCNAME}() : Mauvaise calibration de SUSPEND_MODE : '${SUSPEND_MODE}'. Remise à 0 de SUSPEND_MODE." && SUSPEND_MODE=0 && mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_suspend'"
     [[ ! $MAX_WEATHER_DELAY_SEC =~ ^[0-9]{1,5}$ ]] && wout "${FUNCNAME}() : La variable globale MAX_WEATHER_DELAY_SEC n'est pas initialisée ou pas conforme. Désactivation de la fonction météo" && MAX_WEATHER_DELAY_SEC=0
-    [[ ! $SKIP =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP non initialisée. Initialisation à 0" && SKIP=0
+    [[ ! $SKIP_ON =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_ON=0
+    [[ ! $SKIP_OFF =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_OFF=0
     [[ ! $order_type =~ ^0|1$ ]] && eout "${FUNCNAME}() : Argument 1 passé (order_type='${order_type}') doit être 0 ou 1. Ordre incohérent, arrêt du script..."
     [[ ! $waiting_time_sec =~ ^[0-9]{1,5}$ ]] && eout "${FUNCNAME}() : Argument 2 passé (waiting_time_sec='${waiting_time_sec}') doit être entre 0 et 9999. Ordre incohérent, arrêt du script..."
 
@@ -99,12 +102,44 @@ order_next_switch(){
     debug_ "Délai du à la météo : ${weather_delay_sec}"
     sleep $weather_delay_sec
 
-    if (( SKIP > 0 )); then
-        debug_ "SKIP détecté : ${SKIP} restant(s), ordre repoussé."
-        SKIP=$(( SKIP - 1))
+    # Vérification des skip de l'allumage et de l'arrêt
+    if [[ $order_type = 1 ]]; then
+        if (( SKIP_ON > 0 )); then
+            debug_ "${SKIP_ON} Skip de l'allumage restant(s)"
+            SKIP_ON=$(( SKIP_ON - 1 ))
+            if mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_ON}' WHERE nom_opt = 'lampe_run_skip_allumage'"; then
+                skip_order=true
+                debug_ "Skip de l'allumage demmandé. Skip restant : ${SKIP_ON}"
+            else
+                fout "${FUNCNAME}() : L'enregistrement SKIP_ON (lampe_run_skip_allumage) en base de données à échoué. Aucun skip ne sera fait pour l'allumage."
+                lout "Tentative de mettre à jour SKIP_ON (lampe_run_skip_allumage) à 0 dans la base de données dans 10 secondes"
+                sleep 10
+                ! mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_allumage'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
+            fi
+        fi
     else
-        debug_ "Switch de la lampe à ${order_type}"
-        switch_lampe $order_type
+        if (( SKIP_OFF > 0 )); then
+            debug_ "${SKIP_OFF} Skip de l'allumage restant(s)"
+            SKIP_OFF=$(( SKIP_OFF - 1 ))
+            if mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_OFF}' WHERE nom_opt = 'lampe_run_skip_arret'"; then
+                skip_order=true
+                debug_ "Skip de l'arrêt demmandé. Skip restant : ${SKIP_OFF}"
+            else
+                fout "${FUNCNAME}() : L'enregistrement SKIP_OFF (lampe_run_skip_arret) en base de données à échoué. Aucun skip ne sera fait pour l'allumage."
+                lout "Tentative de mettre à jour SKIP_OFF (lampe_run_skip_arret) à 0 dans la base de données dans 10 secondes"
+                sleep 10
+                ! mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_arret'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
+            fi
+        fi
+    fi
+
+    if [[ $skip_order = false ]]; then
+        if [[ $SUSPEND_MODE = 0 ]]; then
+            debug_ "Switch de la lampe à ${order_type}"
+            switch_lampe $order_type
+        else
+            lout "Mode suspend : Switch verouillé, aucun switch à faire jusqu'à l'arrêt manuel du mode suspend."
+        fi
     fi
     return 0
 }
@@ -118,11 +153,11 @@ get_weather_delay(){
     return 1
 }
 
-# return "<mode de cycle 0, 1, 2> <décallage en secodnes>"|false
+# return "<lampe_decalage> <lampe_run_skip_allumage> <lampe_run_skip_arret> <lampe_run_suspend>"|false
 get_opt(){
     local options
-    ! options=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_skip' OR nom_opt = 'lampe_decalage'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
-    [[ ! $options =~ ^[0-2][[:space:]][0-9]{1,5}$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
+    ! options=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+    [[ ! $options =~ ^[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
     echo "${options}"
     return 0
 }
