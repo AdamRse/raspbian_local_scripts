@@ -5,9 +5,9 @@ function switchgpio($gpio, $force = null){
     $b2="Le gpio$gpio n'a pas pu être ouvert (".__FILE__." ligne ".__LINE__.")";
     if(file_exists("/sys/class/gpio/gpio".($gpio+512)."/value")){
         if($force===null)
-            $b2 = exec('bash /home/adam/dev/projets/raspbian_local_scripts/lampe_switch_pi_OS.sh '.$gpio, $out2, $idErr2);
+            $b2 = exec('bash /opt/raspbian_local_scripts/lampe_switch_pi_OS.sh '.$gpio, $out2, $idErr2);
         else
-            $b2 = exec('bash /home/adam/dev/projets/raspbian_local_scripts/lampe_switch_pi_OS.sh '.$gpio.' '.$force, $out2, $idErr2);
+            $b2 = exec('bash /opt/raspbian_local_scripts/lampe_switch_pi_OS.sh '.$gpio.' '.$force, $out2, $idErr2);
     }
     return empty($b2)?true:$b2;
 }

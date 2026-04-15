@@ -25,6 +25,10 @@ check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à l
 set_check_globals(){
     check_vars_exist "ROOT_DIR SCRIPT_PATH"
     [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh" && [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "Impossible de commuter la lampe, la variable globale SWITCH_SCRIPT_PATH n'est pas définie."
+
+    MAX_WEATHER_DELAY_SEC=$(get_max_weather_delay)
+
+    refresh_opt
 }
 
 is_gpio_user(){
@@ -46,7 +50,7 @@ test_db_connect(){
             debug_ "✅ La table ${table} est accessible."
         else
             debug_ "Mysql renvoie une erreur : ${connect_db}"
-            eout "La base de données n'existe pas ou n'est pas accessible avec les variables du .env"
+            eout "La base de données n'existe pas ou n'est pas accessible en socket unix par l'utilisateur ${USER}"
         fi
     done
     lout "✅ Connexion aux tables mysql réussies"
@@ -80,7 +84,6 @@ order_next_switch(){
     local waiting_time_sec=${2}
     local weather_delay_sec
     local skip_order=false
-    [[ ! $SUSPEND_MODE =~ ^0|1$ ]] && wout "${FUNCNAME}() : Mauvaise calibration de SUSPEND_MODE : '${SUSPEND_MODE}'. Remise à 0 de SUSPEND_MODE." && SUSPEND_MODE=0 && mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_suspend'"
     [[ ! $MAX_WEATHER_DELAY_SEC =~ ^[0-9]{1,5}$ ]] && wout "${FUNCNAME}() : La variable globale MAX_WEATHER_DELAY_SEC n'est pas initialisée ou pas conforme. Désactivation de la fonction météo" && MAX_WEATHER_DELAY_SEC=0
     [[ ! $SKIP_ON =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_ON=0
     [[ ! $SKIP_OFF =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_OFF=0
@@ -91,6 +94,8 @@ order_next_switch(){
     # Ici on recalcul le temps de pause avant le déclenchement e l'ordre calculé au plus tôt possible
     if [[ $order_type = 1 ]]; then
         waiting_time_sec=$(( waiting_time_sec - MAX_WEATHER_DELAY_SEC ))
+        debug_ "Calcul du temps d'attente vis à vis de la météo pour l'allumage, renversement : ${waiting_time_sec} - ${MAX_WEATHER_DELAY_SEC} = ${waiting_time_sec}s"
+        ((waiting_time_sec < 0 )) && waiting_time_sec=0 && debug_ "Remise à 0 pour cause de temps négatif"
     fi
     debug_ "Pause de $waiting_time_sec secondes avant d'effectuer l'ordre"
     sleep $waiting_time_sec
@@ -98,8 +103,9 @@ order_next_switch(){
     if (( MAX_WEATHER_DELAY_SEC > 0 )); then
         # On calcule le délai à ajouter (pour éteindre) ou à enlever (pour allumer)
         if weather_delay_sec=$(get_weather_delay); then
-            if [[ $order_type = 1 ]]; then # Il faut l'inverser car on a enlevé du temps. si 100% de nuage, on allume tout de suite.
+            if [[ $order_type = 1 ]]; then # Il faut l'inverser car on a enlevé du temps précédement. si 100% de nuage, on allume tout de suite.
                 weather_delay_sec=$(( MAX_WEATHER_DELAY_SEC - weather_delay_sec ))
+                debug_ "Re-calcul du temps d'attente vis à vis de la météo pour l'allumage, compensation du renversement : ${MAX_WEATHER_DELAY_SEC} - ${weather_delay_sec} = ${weather_delay_sec}s"
             fi
         else
             wout "La fonction get_weather_delay() renvoie une erreur, annulation de la fonction météo."
@@ -114,6 +120,7 @@ order_next_switch(){
     else
         wout "Fonction météo ignorée. Ajoutez une variable MAX_WEATHER_DELAY_SEC conforme dans le .env et relancez le service pour l'activer."
     fi
+    refresh_opt
 
     # Vérification des skip de l'allumage et de l'arrêt
     if [[ $order_type = 1 ]]; then
@@ -148,10 +155,10 @@ order_next_switch(){
 
     if [[ $skip_order = false ]]; then
         if [[ $SUSPEND_MODE = 0 ]]; then
-            debug_ "Switch de la lampe à ${order_type}"
+            debug_ ":: Switch de la lampe à ${order_type} ::"
             switch_lampe $order_type
         else
-            lout "Mode suspend : Switch verouillé, aucun switch à faire jusqu'à l'arrêt manuel du mode suspend."
+            lout ":: Mode suspend : Switch verouillé, aucun switch à faire jusqu'à l'arrêt manuel du mode suspend ::"
         fi
     fi
     return 0
@@ -210,13 +217,17 @@ get_max_weather_delay(){
     echo "${max_delay}"
 }
 
-# return "<lampe_decalage> <lampe_run_skip_allumage> <lampe_run_skip_arret> <lampe_run_suspend>"|false
-get_opt(){
+# Lis les options en base de données et refresh les variables globales
+refresh_opt(){
     local options
     ! options=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
     [[ ! $options =~ ^-?[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
-    echo "${options}"
-    return 0
+    read -rd '' USER_DELAY_SEC SKIP_ON SKIP_OFF SUSPEND_MODE <<< "${options}"
+    debug_ "-- REFRESH OPTIONS --"
+    debug_ "Délai utilisateur : ${USER_DELAY_SEC}s"
+    debug_ "Skip à l'allumage : ${SKIP_ON}"
+    debug_ "Skip à l'arrêt : ${SKIP_OFF}"
+    debug_ "Suspend mode : ${SUSPEND_MODE}"
 }
 
 double_switch_signal(){
@@ -224,6 +235,7 @@ double_switch_signal(){
     sleep 1
     switch_lampe
     sleep 1
+    return 0
 }
 
 get_todays_schedule(){
@@ -238,6 +250,14 @@ get_ut_tomorrows_sunset(){
     local ut_tomorrow=$(($(date +%s) + 86400))
     ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d @${ut_tomorrow} +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
     [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
-    echo $(date -d ${schedule} +%s)
+    echo $(( $(date -d "${schedule}" +%s) + 86400 ))
     return 0
+}
+
+convert_readable_date_from_ut(){
+    local given_date=${1}
+    local calculated_date
+    [[ ! $given_date =~ [0-9]{1,10} ]] && wout "${FUNCNAME}() : La date donnée n'est pas un timestamp unix" && return 1
+    ! calculated_date="$(date -d @${given_date} +'%a %d %b à %H:%M:%S')"  && wout "${FUNCNAME}() : La date donnée n'est pas convertible" && return 1
+    echo "${calculated_date}"
 }
