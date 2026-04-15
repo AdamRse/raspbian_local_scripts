@@ -32,7 +32,7 @@ test_db_connect(){
     local connect_db
 
     for table in $tables; do
-        connect_db="$(mysql -u "raspi" "raspi_general" -e "DESCRIBE ${table};")"
+        connect_db="$(mysql "raspi_general" -e "DESCRIBE ${table};")"
         if [[ $? = 0 ]]; then
             debug_ "✅ La table ${table} est accessible."
         else
@@ -71,7 +71,7 @@ order_next_switch(){
     local waiting_time_sec=${2}
     local weather_delay_sec
     local skip_order=false
-    [[ ! $SUSPEND_MODE =~ ^0|1$ ]] && wout "${FUNCNAME}() : Mauvaise calibration de SUSPEND_MODE : '${SUSPEND_MODE}'. Remise à 0 de SUSPEND_MODE." && SUSPEND_MODE=0 && mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_suspend'"
+    [[ ! $SUSPEND_MODE =~ ^0|1$ ]] && wout "${FUNCNAME}() : Mauvaise calibration de SUSPEND_MODE : '${SUSPEND_MODE}'. Remise à 0 de SUSPEND_MODE." && SUSPEND_MODE=0 && mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_suspend'"
     [[ ! $MAX_WEATHER_DELAY_SEC =~ ^[0-9]{1,5}$ ]] && wout "${FUNCNAME}() : La variable globale MAX_WEATHER_DELAY_SEC n'est pas initialisée ou pas conforme. Désactivation de la fonction météo" && MAX_WEATHER_DELAY_SEC=0
     [[ ! $SKIP_ON =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_ON=0
     [[ ! $SKIP_OFF =~ ^[0-9]{1,2}$ ]] && wout "${FUNCNAME}() : Variable globale SKIP_ON non initialisée. Initialisation à 0" && SKIP_OFF=0
@@ -107,28 +107,28 @@ order_next_switch(){
         if (( SKIP_ON > 0 )); then
             debug_ "${SKIP_ON} Skip de l'allumage restant(s)"
             SKIP_ON=$(( SKIP_ON - 1 ))
-            if mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_ON}' WHERE nom_opt = 'lampe_run_skip_allumage'"; then
+            if mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_ON}' WHERE nom_opt = 'lampe_run_skip_allumage'"; then
                 skip_order=true
                 debug_ "Skip de l'allumage demmandé. Skip restant : ${SKIP_ON}"
             else
                 fout "${FUNCNAME}() : L'enregistrement SKIP_ON (lampe_run_skip_allumage) en base de données à échoué. Aucun skip ne sera fait pour l'allumage."
                 lout "Tentative de mettre à jour SKIP_ON (lampe_run_skip_allumage) à 0 dans la base de données dans 10 secondes"
                 sleep 10
-                ! mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_allumage'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
+                ! mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_allumage'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
             fi
         fi
     else
         if (( SKIP_OFF > 0 )); then
             debug_ "${SKIP_OFF} Skip de l'allumage restant(s)"
             SKIP_OFF=$(( SKIP_OFF - 1 ))
-            if mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_OFF}' WHERE nom_opt = 'lampe_run_skip_arret'"; then
+            if mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '${SKIP_OFF}' WHERE nom_opt = 'lampe_run_skip_arret'"; then
                 skip_order=true
                 debug_ "Skip de l'arrêt demmandé. Skip restant : ${SKIP_OFF}"
             else
                 fout "${FUNCNAME}() : L'enregistrement SKIP_OFF (lampe_run_skip_arret) en base de données à échoué. Aucun skip ne sera fait pour l'allumage."
                 lout "Tentative de mettre à jour SKIP_OFF (lampe_run_skip_arret) à 0 dans la base de données dans 10 secondes"
                 sleep 10
-                ! mysql -u "raspi" -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_arret'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
+                ! mysql -D "raspi_general" -N -r -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip_arret'" && fout "Tentative échoué, la requête renvoie une erreur. Envoi d'un signal lampe." && double_switch_signal
             fi
         fi
     fi
@@ -156,7 +156,7 @@ get_weather_delay(){
 # return "<lampe_decalage> <lampe_run_skip_allumage> <lampe_run_skip_arret> <lampe_run_suspend>"|false
 get_opt(){
     local options
-    ! options=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+    ! options=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
     [[ ! $options =~ ^[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
     echo "${options}"
     return 0
@@ -197,14 +197,14 @@ get_delay_from_clouds_percent(){
 
 double_switch_signal(){
     switch_lampe
-    sleep 2
+    sleep 1
     switch_lampe
     sleep 1
 }
 
 get_todays_schedule(){
     local schedule
-    ! schedule=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+    ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
     [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
     echo "${schedule}"
     return 0
@@ -212,7 +212,7 @@ get_todays_schedule(){
 
 get_ut_tomorrows_sunset(){
     local ut_tomorrow=$(($(date +%s) + 86400))
-    ! schedule=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d @${ut_tomorrow} +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
+    ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d @${ut_tomorrow} +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
     [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
     echo $(date -d ${schedule} +%s)
     return 0

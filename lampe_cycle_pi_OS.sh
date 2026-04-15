@@ -8,15 +8,15 @@ cycles=0
 
 function obtenir_opt()
 {
-  echo $(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_cycle' OR nom_opt = 'lampe_decalage'")
+  echo $(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_cycle' OR nom_opt = 'lampe_decalage'")
 }
 function jour()
 {
-  echo $(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$dtId'")
+  echo $(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$dtId'")
 }
 
 run=true
-mysql -u "raspi" -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '$pid' WHERE nom_opt = 'lampe_run_cycle'"
+mysql -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '$pid' WHERE nom_opt = 'lampe_run_cycle'"
 
 #Le programme annonce son lancement physiquement par un switch
 bash /home/adam/dev/projets/raspbian_local_scripts/lampe_switch_pi_OS.sh 22
@@ -59,7 +59,7 @@ while $run; do
     #On est dans la nuit, on active au lever suivant
     demainId=$(date --date="+1 day" +%d%m)
     demainDate=$(date --date="+1 day" +%Y-%m-%d)
-    leverDemain=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$demainId';")
+    leverDemain=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$demainId';")
     secDemain=$(date -d "$demainDate $leverDemain" +%s)
     tempsAttente=$(( $secDemain - $secNow - $decalage ))
     allumer=false
@@ -79,9 +79,9 @@ while $run; do
   else
     echo "[ATTENTE : $tempsAttente]"
     sleep $tempsAttente
-    if [ $(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_cycle'") == $pid ];
+    if [ $(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_cycle'") == $pid ];
     then
-      skip=$(mysql -u "raspi" -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_skip'")
+      skip=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt = 'lampe_run_skip'")
       if [ $skip == "0" ];
       then
         if $allumer; then
@@ -94,7 +94,7 @@ while $run; do
         else
           if [ $skip == 1 ];
           then
-            mysql -u "raspi" -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip'"
+            mysql -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_skip'"
             echo -e "Annulation ponctuelle de l'ordre de basculement. Le prochain basculement sera effectué."
           else
             echo -e "Annulation permanente de l'ordre de basculement. Le programme reste actif et testera à nouveau l'ordre d'annulation au prochan basculement (configuration manuelle nécéssaire pour rétablissement)."
@@ -109,4 +109,4 @@ while $run; do
 
 done
 echo -e "[Fin de programme]"
-mysql -u "raspi" -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_cycle'"
+mysql -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'lampe_run_cycle'"

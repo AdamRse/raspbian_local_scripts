@@ -7,12 +7,12 @@ Wants=network-online.target
 User=raspi
 Group=raspi
 Type=simple
-ExecStart=h
+ExecStart=/opt/raspbian_local_scripts/lampeur.sh
 Restart=on-failure
 RestartSec=3600
 StartLimitIntervalSec=86400
 StartLimitBurst=4
-WorkingDirectory=
+WorkingDirectory=/opt/raspbian_local_scripts
 
 [Install]
 WantedBy=multi-user.target

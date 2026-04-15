@@ -6,14 +6,14 @@ pid=$$
 #change
 
 function get_cpu_temp()
-{   
+{
   line=$(head -n 1 /sys/class/thermal/thermal_zone0/temp)
   echo $(awk "BEGIN {printf \"%.2f\n\", $line/1000}")
 }
 
 function obtenir_opt()
 {
-  echo $(mysql -u "raspi" -D "raspi_general" -s -N  -e "SELECT valeur FROM opt WHERE nom_opt = 'temperature_frequence_check' OR nom_opt = 'temperature_warning_alert_trigger_limit' OR nom_opt = 'temperature_warning_alert_trigger';")
+  echo $(mysql -D "raspi_general" -s -N  -e "SELECT valeur FROM opt WHERE nom_opt = 'temperature_frequence_check' OR nom_opt = 'temperature_warning_alert_trigger_limit' OR nom_opt = 'temperature_warning_alert_trigger';")
 }
 
 function alerter()
@@ -25,7 +25,7 @@ function alerter()
 alerteDonnee="0"
 run=true
 
-mysql -u "raspi" -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '$pid' WHERE nom_opt = 'temperature_run'"
+mysql -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '$pid' WHERE nom_opt = 'temperature_run'"
 
 while $run; do
   #initialisation des variables pour le controle
@@ -74,16 +74,16 @@ while $run; do
     horloge=${tabOpt[0]}
   fi
 
-  if [ $(mysql -u "raspi" -D "raspi_general" -s -N  -e "SELECT valeur FROM opt WHERE nom_opt = 'temperature_run'") != $pid ]
+  if [ $(mysql -D "raspi_general" -s -N  -e "SELECT valeur FROM opt WHERE nom_opt = 'temperature_run'") != $pid ]
   then
     run=false
   fi
 
-  $(mysql -u "raspi" -D "raspi_general" -e "INSERT INTO temp_log (temperature) VALUES ($temperature);")
+  $(mysql -D "raspi_general" -e "INSERT INTO temp_log (temperature) VALUES ($temperature);")
   echo -e "température\t$temperature"
   echo -e "horloge\t\t$horloge"
 
   sleep $horloge
 done
 
-mysql -u "raspi" -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'temperature_run'"
+mysql -D "raspi_general" -s -N  -e "UPDATE opt SET valeur = '0' WHERE nom_opt = 'temperature_run'"
