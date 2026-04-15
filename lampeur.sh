@@ -21,6 +21,7 @@ source "${ROOT_DIR}/src/opt-parser/lampeur.parser.sh" || exit 1
 
 check_requirements
 set_check_globals
+is_gpio_user
 test_db_connect
 
 double_switch_signal

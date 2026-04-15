@@ -27,6 +27,15 @@ set_check_globals(){
     [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh" && [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "Impossible de commuter la lampe, la variable globale SWITCH_SCRIPT_PATH n'est pas définie."
 }
 
+is_gpio_user(){
+    if groups "$USER" | grep -q "\bgpio\b" || [[ $EUID -eq 0 ]]; then
+        lout "L'utilisateur a bien accès au groupe gpio"
+        return 0
+    else
+        eout "L'utilisateur n'a pas accès au groupe 'gpio' et ne peut donc commander le basculement. Arrêt du programme."
+    fi
+}
+
 test_db_connect(){
     local tables="cycle_jour_nuit opt"
     local connect_db
@@ -59,7 +68,7 @@ switch_lampe(){
     [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "${FUNCNAME}() : Impossible de commuter la lampe, la variable '\$SWITCH_SCRIPT_PATH' du fichier .env n'est pas définie."
     check_vars_exist "GPIO_ID"
 
-    bash $SWITCH_SCRIPT_PATH $GPIO_ID $force_switch
+    bash $SWITCH_SCRIPT_PATH $GPIO_ID $force_switch ||eout "Impossible de switcher le GPIO ${GPIO_ID}, vérifiez le droits de l'utilisateur du script, il doit accéder au groupe 'gpio'"
 }
 
 # Gère l'ordre de marche ou d'arrêt après un délai, gère SKIP_ON, SKIP_OFF et SUSPEND_MODE
