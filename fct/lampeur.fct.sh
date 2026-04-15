@@ -196,11 +196,10 @@ get_delay_from_clouds_percent(){
 }
 
 double_switch_signal(){
-    # switch_lampe
-    # sleep 1
-    # switch_lampe
-    # sleep 1
-    return 1
+    switch_lampe
+    sleep 2
+    switch_lampe
+    sleep 1
 }
 
 get_todays_schedule(){
