@@ -43,14 +43,18 @@ while $run; do
 
     # --- CALCUL DES VALEURS ---
     tab_options=$(get_opt) || trigger_error_delay "Impossible de récupérer les options dans la table mysql, envoi du signal et attente de 1 heure."
-    debug_ "tab_options:'${tab_options}'"
     read -rd '' user_delay_sec SKIP_ON SKIP_OFF SUSPEND_MODE <<< "${tab_options}"
-    [[ $SUSPEND_MODE =~ ^0|1$ ]] ||trigger_error_delay "Impossible de récupérer le SUSPEND_MODE dans la table mysql (lampe_run_skip = '${SUSPEND_MODE}'), envoi du signal et attente de 1 heure."
-    [[ $user_delay_sec =~ ^\-?[0-9]{1,5}$ ]] ||trigger_error_delay "Impossible de récupérer les le user_delay_sec dans la table mysql (lampe_decallage = '${user_delay_sec}'), envoi du signal et attente de 1 heure."
+    debug_ "-- OPTIONS --"
+    debug_ "Délai utilisateur : ${user_delay_sec}s"
+    debug_ "Skip à l'allumage : ${SKIP_ON}"
+    debug_ "Skip à l'arrêt : ${SKIP_OFF}"
+    debug_ "Suspend mode : ${SUSPEND_MODE}"
 
     today_schedule=$(get_todays_schedule) || trigger_error_delay "Impossible de récupérer les horaires dans la table mysql, envoi du signal et attente de 1 heure."
-    debug_ "today_schedule:'${today_schedule}'"
     read -rd '' sunset_hour_24 twilight_hour_24 <<< "${today_schedule}"
+    debug_ "-- HORAIRES RÉCUPÉRÉS --"
+    debug_ "Heure lever du soleil : ${sunset_hour_24}"
+    debug_ "Heure coucher du soleil : ${twilight_hour_24}"
 
     ut_now=$(date +%s)
     ut_sunset=$(date -d $sunset_hour_24 +%s)
@@ -61,24 +65,26 @@ while $run; do
 
     ut_sunset=$((ut_sunset + user_delay_sec))
     ut_twilight=$((ut_twilight + user_delay_sec))
+    debug_ "-- CALCUL DU DÉCLENCHEMENT --"
     debug_ "Déclencheur du lever d'aujourd'hui : $(date -d @${ut_sunset} +'%H:%M:%S')"
     debug_ "Déclencheur du coucher d'aujourd'hui : $(date -d @${ut_twilight} +'%H:%M:%S')"
 
 
     # --- DÉBUT DE LA LOGIQUE ---
 
+    debug_ "-- ENVOI DE L'ORDRE --"
     if (( ut_now > ut_twilight )); then # On déclenche demain, il nous faut la date de demain matin
         UT_TOMORROW_SUNSET=$(( $(get_ut_tomorrows_sunset) + total_delay_sec ))
         WAITING_TIME_SEC=$(( UT_TOMORROW_SUNSET - ut_now ))
-        debug_ "Ordre de déclanchement demain matin à $(date -d @${UT_TOMORROW_SUNSET} +'%H:%M:%S')"
+        debug_ "Ordre de déclenchement demain matin à $(date -d @${UT_TOMORROW_SUNSET} +'%H:%M:%S')"
         order_next_switch 0 $WAITING_TIME_SEC
     elif (( ut_now > ut_sunset )); then # On déclanche ce soir
         WAITING_TIME_SEC=$(( ut_twilight - ut_now ))
-        debug_ "Ordre de déclanchement ce soir à $(date -d @${ut_twilight} +'%H:%M:%S')"
+        debug_ "Ordre de déclenchement ce soir à $(date -d @${ut_twilight} +'%H:%M:%S')"
         order_next_switch 1 $WAITING_TIME_SEC
     else # On déclanche ce matin
         WAITING_TIME_SEC=$(( ut_sunset - ut_now ))
-        debug_ "Ordre de déclanchement ce matin à $(date -d @${ut_sunset} +'%H:%M:%S')"
+        debug_ "Ordre de déclenchement ce matin à $(date -d @${ut_sunset} +'%H:%M:%S')"
         order_next_switch 0 $WAITING_TIME_SEC
     fi
 

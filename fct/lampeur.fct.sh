@@ -29,7 +29,7 @@ set_check_globals(){
 
 is_gpio_user(){
     if groups "$USER" | grep -q "\bgpio\b" || [[ $EUID -eq 0 ]]; then
-        lout "L'utilisateur a bien accès au groupe gpio"
+        lout "✅ L'utilisateur a bien accès au groupe gpio"
         return 0
     else
         eout "L'utilisateur n'a pas accès au groupe 'gpio' et ne peut donc commander le basculement. Arrêt du programme."
@@ -49,7 +49,7 @@ test_db_connect(){
             eout "La base de données n'existe pas ou n'est pas accessible avec les variables du .env"
         fi
     done
-    lout "Connexion aux tables mysql réussies"
+    lout "✅ Connexion aux tables mysql réussies"
 }
 
 # return exit
@@ -166,7 +166,7 @@ get_weather_delay(){
 get_opt(){
     local options
     ! options=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
-    [[ ! $options =~ ^[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
+    [[ ! $options =~ ^-?[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
     echo "${options}"
     return 0
 }
