@@ -26,17 +26,19 @@ test_db_connect
 
 double_switch_signal
 
-lout "DÉMARRAGE DU PROGRAMME"
-lout "--- Paramètres ---"
-lout "GPIO : ${GPIO_ID}"
-lout "Script de basculement : ${SWITCH_SCRIPT_PATH}"
-debug_ "Mode debug : ON"
 
 WAITING_TIME_SEC=""
 SKIP_ON=0
 SKIP_OFF=0
 SUSPEND_MODE=0
-MAX_WEATHER_DELAY_SEC=3600
+MAX_WEATHER_DELAY_SEC=$(get_max_weather_delay)
+
+lout "DÉMARRAGE DU PROGRAMME"
+lout "--- Paramètres ---"
+lout "GPIO : ${GPIO_ID}"
+lout "Script de basculement : ${SWITCH_SCRIPT_PATH}"
+lout "Délai météo maximum : ${MAX_WEATHER_DELAY_SEC}s"
+debug_ "Mode debug : ON"
 
 while $run; do
     echo "----------------- BOUCLE -----------------"

@@ -95,21 +95,25 @@ order_next_switch(){
     debug_ "Pause de $waiting_time_sec secondes avant d'effectuer l'ordre"
     sleep $waiting_time_sec
 
-    # On calcule le délai à ajouter (pour éteindre) ou à enlever (pour allumer)
-    if weather_delay_sec=$(get_weather_delay); then
-        if [[ $order_type = 1 ]]; then # Il faut l'inverser car on a enlevé du temps. si 100% de nuage, on allume tout de suite.
-            weather_delay_sec=$(( MAX_WEATHER_DELAY_SEC - weather_delay_sec ))
-        fi
-    else
-        wout "La fonction get_weather_delay() renvoie une erreur, annulation de la fonction météo."
-        if [[ $order_type = 1 ]]; then
-            weather_delay_sec=$MAX_WEATHER_DELAY_SEC
+    if (( MAX_WEATHER_DELAY_SEC > 0 )); then
+        # On calcule le délai à ajouter (pour éteindre) ou à enlever (pour allumer)
+        if weather_delay_sec=$(get_weather_delay); then
+            if [[ $order_type = 1 ]]; then # Il faut l'inverser car on a enlevé du temps. si 100% de nuage, on allume tout de suite.
+                weather_delay_sec=$(( MAX_WEATHER_DELAY_SEC - weather_delay_sec ))
+            fi
         else
-            weather_delay_sec=0
+            wout "La fonction get_weather_delay() renvoie une erreur, annulation de la fonction météo."
+            if [[ $order_type = 1 ]]; then
+                weather_delay_sec=$MAX_WEATHER_DELAY_SEC
+            else
+                weather_delay_sec=0
+            fi
         fi
+        debug_ "Délai du à la météo : ${weather_delay_sec}"
+        sleep $weather_delay_sec
+    else
+        wout "Fonction météo ignorée. Ajoutez une variable MAX_WEATHER_DELAY_SEC conforme dans le .env et relancez le service pour l'activer."
     fi
-    debug_ "Délai du à la météo : ${weather_delay_sec}"
-    sleep $weather_delay_sec
 
     # Vérification des skip de l'allumage et de l'arrêt
     if [[ $order_type = 1 ]]; then
@@ -156,19 +160,28 @@ order_next_switch(){
 get_weather_delay(){
     local weather_delay_sec
     local clouds_percent
-    ! clouds_percent=$(get_clouds_percent_from_weather_api) && echo "0" && return 0
-    ! weather_delay_sec=$(get_delay_from_clouds_percent ${clouds_percent}) && echo "0" && return 0
+    ! clouds_percent=$(get_clouds_percent_from_weather_api) && echo "${clouds_percent}" && return 1
+    ! weather_delay_sec=$(get_delay_from_clouds_percent ${clouds_percent}) && echo "${weather_delay_sec}" && return 1
     echo $weather_delay_sec
-    return 1
 }
 
-# return "<lampe_decalage> <lampe_run_skip_allumage> <lampe_run_skip_arret> <lampe_run_suspend>"|false
-get_opt(){
-    local options
-    ! options=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
-    [[ ! $options =~ ^-?[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
-    echo "${options}"
-    return 0
+# Retourn un délai d'attente en fonction du % de couverture nuageuse, à partie de PARAM_WEATHER_DELAY dans le .env
+# $1    : cloud_percent : 0-100 : Pourcentage de couverture nuageuse
+# return int
+get_delay_from_clouds_percent() {
+    local cloud_percent=$1
+    local found_delay=0
+    [[ $MAX_WEATHER_DELAY_SEC = 0 ]] && echo "0" && return 0
+    [[ ! $cloud_percent =~ ^[0-9]{1,3}$ ]] && wout "${FUNCNAME}() : Le paramètre passé cloud_percent (${cloud_percent}) n'est pas un pourcentage. La fonction météo sera désactivée." && return 1
+
+    for entry in "${PARAM_WEATHER_DELAY[@]}"; do
+        IFS=":" read -r percent delay <<< "${entry}"
+
+        if (( cloud_percent >= percent )); then
+            (( percent > found_delay )) && found_delay=$delay
+        fi
+    done
+    echo "${found_delay}"
 }
 
 get_clouds_percent_from_weather_api(){
@@ -183,24 +196,26 @@ get_clouds_percent_from_weather_api(){
     return 0
 }
 
-get_delay_from_clouds_percent(){
-    local percent_clouds=${1}
-    [[ -z $MAX_WEATHER_DELAY_SEC ]] && MAX_WEATHER_DELAY_SEC=0 && fout "La variable globale MAX_WEATHER_DELAY_SEC n'est pas initialisée, la fonction météo est désactivée." && return 0
-    [[ ! $percent_clouds =~ ^[0-9]{1,3}$ ]] && fout "La valeur donné à get_delay_from_clouds_percent() n'est pas un pourcentage" && return 1
+# Donne le délai max en secondes de PARAM_WEATHER_DELAY dans le .env
+# return "0-100"
+get_max_weather_delay(){
+    local max_delay=0
 
-    if [[ $percent_clouds = 100 ]]; then
-        echo "${MAX_WEATHER_DELAY_SEC}" # 60 minutes
-    elif (( percent_clouds > 90 )); then
-        echo "1800" # 30 min
-    elif (( percent_clouds > 80 )); then
-        echo "1200" # 15 min
-    elif (( percent_clouds > 50 )); then
-        echo "900"
-    elif (( percent_clouds > 30 )); then
-        echo "200"
-    else
-        echo "0"
-    fi
+    for entry in "${PARAM_WEATHER_DELAY[@]}"; do
+        IFS=":" read -r percent delay <<< "${entry}"
+        if (( delay > max_delay )); then
+            max_delay=$delay
+        fi
+    done
+    echo "${max_delay}"
+}
+
+# return "<lampe_decalage> <lampe_run_skip_allumage> <lampe_run_skip_arret> <lampe_run_suspend>"|false
+get_opt(){
+    local options
+    ! options=$(mysql -D "raspi_general" -N -r -e "SELECT valeur FROM opt WHERE nom_opt IN ('lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend') ORDER BY FIELD(nom_opt, 'lampe_decalage', 'lampe_run_skip_allumage', 'lampe_run_skip_arret', 'lampe_run_suspend')") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+    [[ ! $options =~ ^-?[0-9]{1,5}([[:space:]][0-9]{1,2}){2}[[:space:]]0|1$ ]] && wout "${FUNCNAME}() : Les options récupérées dans la base de données ne correspondent pas aux valeurs attendues : '${options}'" && return 1
+    echo "${options}"
     return 0
 }
 
