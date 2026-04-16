@@ -16,7 +16,7 @@ SUSPEND_MODE=0
 USER_DELAY_SEC=0
 MAX_WEATHER_DELAY_SEC=0
 
-#
+# -- SCRIPTS --
 
 source "${ROOT_DIR}/fct/common/terminal-tools.sh" || exit 1
 source "${ROOT_DIR}/fct/common/common-tools.sh" || exit 1
@@ -63,8 +63,8 @@ while true; do
     ut_sunset=$((ut_sunset + USER_DELAY_SEC))
     ut_twilight=$((ut_twilight + USER_DELAY_SEC))
     debug_ "-- CALCUL DU DÉCLENCHEMENT --"
-    debug_ "Déclencheur du lever d'aujourd'hui : $(date -d @${ut_sunset} +'%a %d %b à %H:%M:%S')"
-    debug_ "Déclencheur du coucher d'aujourd'hui : $(date -d @${ut_twilight} +'%a %d %b à %H:%M:%S')"
+    debug_ "Déclencheur du lever d'aujourd'hui : Le $(convert_readable_date_from_ut ${ut_sunset})"
+    debug_ "Déclencheur du coucher d'aujourd'hui : Le $(convert_readable_date_from_ut ${ut_twilight})"
 
 
     # --- DÉBUT DE LA LOGIQUE ---
@@ -74,17 +74,17 @@ while true; do
         ! ut_tomorrow_sunset=$(get_ut_tomorrows_sunset) && echo "${ut_tomorrow_sunset}" && trigger_error_delay "Impossible de récupérer le timestamp du lever du soleil demain. Arrêt du programme."
         ut_tomorrow_sunset=$(( ut_tomorrow_sunset + total_delay_sec ))
         WAITING_TIME_SEC=$(( ut_tomorrow_sunset - ut_now ))
-        debug_ "Ordre de déclenchement demain matin à $(date -d @${ut_tomorrow_sunset} +'%a %d %b à %H:%M:%S')"
+        debug_ "Ordre de déclenchement demain matin, le $(convert_readable_date_from_ut ${ut_tomorrow_sunset})"
         debug_ "Attente calculée : $ut_tomorrow_sunset - $ut_now = $WAITING_TIME_SEC"
         order_next_switch 0 $WAITING_TIME_SEC
     elif (( ut_now > ut_sunset )); then # On déclanche ce soir
         WAITING_TIME_SEC=$(( ut_twilight - ut_now ))
-        debug_ "Ordre de déclenchement ce soir à $(date -d @${ut_twilight} +'%a %d %b à %H:%M:%S')"
+        debug_ "Ordre de déclenchement ce soir, le $(convert_readable_date_from_ut ${ut_twilight})"
         debug_ "Attente calculée : $ut_twilight - $ut_now = $WAITING_TIME_SEC"
         order_next_switch 1 $WAITING_TIME_SEC
     else # On déclanche ce matin
         WAITING_TIME_SEC=$(( ut_sunset - ut_now ))
-        debug_ "Ordre de déclenchement ce matin à $(date -d @${ut_sunset} +'%a %d %b à %H:%M:%S')"
+        debug_ "Ordre de déclenchement ce matin, le $(convert_readable_date_from_ut ${ut_sunset})"
         debug_ "Attente calculée : $ut_sunset - $ut_now = $WAITING_TIME_SEC"
         order_next_switch 0 $WAITING_TIME_SEC
     fi

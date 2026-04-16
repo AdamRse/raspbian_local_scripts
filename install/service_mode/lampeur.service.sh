@@ -5,13 +5,7 @@
 
 SERVICE_SCRIPT_PATH="$(readlink -f "${0}")"
 INSTALL_SERVICE_DIR="$(dirname "${SERVICE_SCRIPT_PATH}")"
-ROOT_DIR="${ROOT_DIR:-SERVICE_SCRIPT_PATH%/*/*/*}"
-
-echo "DEBUG"
-echo "SERVICE_SCRIPT_PATH : $SERVICE_SCRIPT_PATH"
-echo "INSTALL_SERVICE_DIR : $INSTALL_SERVICE_DIR"
-echo "ROOT_DIR : $ROOT_DIR"
-
+[[ ! -d $ROOT_DIR ]] && ROOT_DIR="${SERVICE_SCRIPT_PATH%/*/*/*}"
 
 source "${ROOT_DIR}/fct/common/terminal-tools.sh" || exit 1
 source "${ROOT_DIR}/fct/common/common-tools.sh" || exit 1

@@ -1,56 +1,80 @@
-#status{
-    
+#status {
+    color: inherit;
 }
-#status .allumee{
-    
+#status .allumee {
+    color: inherit;
 }
-body{
+body {
     background-color: #000;
     color: #fff;
+    --bt-size: 60px;
 }
-#status .eteinte{
-    
+#wrapper {
+    text-align: center;
+    padding-top: 1em;
 }
-.btSwitch{
+#status .eteinte {
+    color: inherit;
+}
+#bt_dashboard {
+    display: flex;
+    justify-content: center;
+}
+.btSwitch {
     padding: 50px 100px;
 }
 
-.bouton{
-    display: inline-block;
-    height: 45px;
-    width: 45px;
+.bouton {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-content: center;
+    height: var(--bt-size);
+    width: var(--bt-size);
     margin: 10px;
     border-radius: 100%;
     cursor: pointer;
+    overflow: hidden;
 }
-.vert-run{
+.bouton input {
+    border: none;
+    background: none;
+    color: inherit;
+    text-align: center;
+    width: var(--bt-size);
+    height: var(--bt-size);
+    margin: 0;
+    padding: 0;
+    font-size: 2em;
+    cursor: inherit;
+}
+.vert-run {
     background-color: #75f251;
     box-shadow: 0 0 30px #75f251;
     border: 3px solid #51a938;
 }
-.vert-stop{
+.vert-stop {
     background-color: #2e6020;
     box-shadow: none;
     border: 3px solid #51a938;
 }
-.rouge-run{
+.rouge-run {
     background-color: #f25151;
     box-shadow: 0px 0px 30px #f25151;
     border: 3px solid #a93838;
 }
-.rouge-stop{
+.rouge-stop {
     background-color: #792828;
     box-shadow: none;
     border: 3px solid #a93838;
 }
-.orange-run{
+.orange-run {
     background-color: #f2ef51;
     box-shadow: 0px 0px 30px #f2ef51;
     border: 3px solid #a9a738;
 }
-.orange-stop{
+.orange-stop {
     background-color: #797728;
     box-shadow: none;
     border: 3px solid #a9a738;
 }
-

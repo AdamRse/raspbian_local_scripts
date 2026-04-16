@@ -11,7 +11,7 @@ ExecStart=/opt/raspbian_local_scripts/lampeur.sh
 Restart=on-failure
 RestartSec=3600
 StartLimitIntervalSec=86400
-StartLimitBurst=4
+StartLimitBurst=2
 WorkingDirectory=/opt/raspbian_local_scripts
 
 [Install]
