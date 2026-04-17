@@ -1,21 +1,15 @@
-#status {
-    color: inherit;
-}
-#status .allumee {
-    color: inherit;
-}
 body {
     background-color: #000;
     color: #fff;
     --bt-size: 60px;
 }
-#wrapper {
-    text-align: center;
-    padding-top: 1em;
+/* Cacher les diodes up et down sur l'input number */
+input[type="number"] {
+    appearance: textfield;
 }
-#status .eteinte {
-    color: inherit;
-}
+
+/* IDs */
+
 #bt_dashboard {
     display: flex;
     justify-content: center;
@@ -27,6 +21,22 @@ body {
     color: #f25151;
     max-width: 500px;
 }
+#status {
+    color: inherit;
+}
+#status .allumee {
+    color: inherit;
+}
+#status .eteinte {
+    color: inherit;
+}
+#wrapper {
+    text-align: center;
+    padding-top: 1em;
+}
+
+/* classes */
+
 .btSwitch {
     padding: 50px 100px;
 }
@@ -102,9 +112,4 @@ body {
     margin: 10px 0;
     padding: 0;
     text-align: center;
-}
-
-/* Cacher les diodes up et down sur l'input number */
-input[type="number"] {
-    appearance: textfield;
 }
