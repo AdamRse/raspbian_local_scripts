@@ -8,11 +8,9 @@ require "env.mysqli.php";
 //     "database",
 // );
 
-$result = $mysqli->query(
-    "SELECT nom_opt, valeur FROM opt WHERE nom_opt = 'lampe_decalage' OR nom_opt = 'lampe_run_skip_allumage' OR nom_opt = 'lampe_run_skip_arret' OR nom_opt = 'lampe_run_suspend'",
-);
+$result = $mysqli->query("SELECT nom_opt, valeur FROM opt WHERE nom_opt = 'lampe_decalage' OR nom_opt = 'lampe_run_skip_allumage' OR nom_opt = 'lampe_run_skip_arret' OR nom_opt = 'lampe_run_suspend'",);
 $options_bdd = [];
-while ($rt = $result->fetch_row()) {
+while($rt = $result->fetch_row()) {
     $options_bdd[$rt[0]] = $rt[1];
 }
 
@@ -35,7 +33,7 @@ while ($rt = $result->fetch_row()) {
         <div id="status">00</div>
         <h3>Mode</h3>
         <div id="bt_dashboard">
-            <div id="bt0" class="bouton vert-run" onclick="clicBascule(0)"></div>
+            <div id="bt0" class="bouton vert-<?= $options_bdd["lampe_run_suspend"]==0?"run":"stop" ?>" onclick="clicBascule(0)"></div>
             <div>
                 <div id="bt1" class="bouton orange-stop" onclick="clicBascule(1)">
                     <input type="text" value="<?= $options_bdd["lampe_run_skip_allumage"] ?>"/>
@@ -48,7 +46,12 @@ while ($rt = $result->fetch_row()) {
                 </div>
                 Coucher
             </div>
-            <div id="bt3" class="bouton rouge-stop" onclick="clicBascule(3)"></div>
+            <div id="bt3" class="bouton rouge-<?= $options_bdd["lampe_run_suspend"]==1?"run":"stop" ?>" onclick="clicBascule(3)"></div>
+        </div>
+        <div class="decallage">
+            <h3>Décallage manuel</h3>
+            <input type="number" min="0" value="<?= $options_bdd["lampe_decalage"] ?>"/>
+            <button>Valider</button>
         </div>
         <p id="statusSkip">
 

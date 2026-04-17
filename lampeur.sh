@@ -89,6 +89,7 @@ while true; do
         order_next_switch 0 $WAITING_TIME_SEC
     fi
 
+
     # Délai tampon pour éviter les arrondis de secondes sur 24h.
     sleep 60
 done

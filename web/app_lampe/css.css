@@ -78,3 +78,21 @@ body {
     box-shadow: none;
     border: 3px solid #a9a738;
 }
+.decallage {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+.decallage button {
+    width: 100px;
+}
+.decallage input {
+    color: inherit;
+    background: none;
+    font-size: 2em;
+    border: none;
+    margin: 10px 0;
+    padding: 0;
+    text-align: center;
+}

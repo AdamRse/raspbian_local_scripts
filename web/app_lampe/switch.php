@@ -12,16 +12,14 @@ function switchgpio($gpio, $force = null){
     return empty($b2)?true:$b2;
 }
 
-//if(!intrus){
-    $ok=null;
-    foreach($_GET as $gpio => $val){
-        if($ok === null){
-            if(is_numeric($gpio) && (empty($val) || $val == "1")){
-                $ok = switchgpio($gpio, $val);
-            }
-            else
-                $ok="GPIO ou sa valeur passé en paramètre GET non valide ([$gpio] => '$val').";
+$ok=null;
+foreach($_GET as $gpio => $val){
+    if($ok === null){
+        if(is_numeric($gpio) && (empty($val) || $val == "1")){
+            $ok = switchgpio($gpio, $val);
         }
+        else
+            $ok="GPIO ou sa valeur passé en paramètre GET non valide ([$gpio] => '$val').";
     }
-    echo (empty($ok))?"1":$ok;
-//}
+}
+echo (empty($ok))?"1":$ok;

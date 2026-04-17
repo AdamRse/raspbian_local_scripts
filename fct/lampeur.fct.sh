@@ -167,6 +167,9 @@ order_next_switch(){
             lout ":: Mode suspend : Switch verouillé, aucun switch à faire jusqu'à l'arrêt manuel du mode suspend ::"
         fi
     fi
+
+    # On réapplique le délai enlevé par la fonction météo, sinon on va refaire le calcul pour la même journée. On cas de SKIP_ON, il seront tous décrémentés jusqu'à 0.
+    [[ $order_type = 1 ]] && sleep $MAX_WEATHER_DELAY_SEC
     return 0
 }
 
