@@ -7,6 +7,7 @@
 SCRIPT_PATH=$(readlink -f "$0")
 ROOT_DIR=$(dirname "$SCRIPT_PATH")
 
+VERSION=1.0
 DEBUG_MODE=false
 SWITCH_SCRIPT_PATH=""
 WAITING_TIME_SEC=""
@@ -35,6 +36,7 @@ set_check_globals
 
 lout "DÉMARRAGE DU PROGRAMME"
 lout "--- Paramètres ---"
+lout "Lampeur v${VERSION}"
 lout "GPIO : ${GPIO_ID}"
 lout "Script de basculement : ${SWITCH_SCRIPT_PATH}"
 lout "Délai météo maximum : ${MAX_WEATHER_DELAY_SEC}s"

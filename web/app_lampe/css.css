@@ -20,11 +20,18 @@ body {
     display: flex;
     justify-content: center;
 }
+#inactive-alert {
+    font-weight: bolder;
+    font-size: 1.5em;
+    margin: 1em auto;
+    color: #f25151;
+    max-width: 500px;
+}
 .btSwitch {
     padding: 50px 100px;
 }
 
-.bouton {
+.diode {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -36,7 +43,7 @@ body {
     cursor: pointer;
     overflow: hidden;
 }
-.bouton input {
+.diode input {
     border: none;
     background: none;
     color: inherit;
@@ -95,4 +102,9 @@ body {
     margin: 10px 0;
     padding: 0;
     text-align: center;
+}
+
+/* Cacher les diodes up et down sur l'input number */
+input[type="number"] {
+    appearance: textfield;
 }

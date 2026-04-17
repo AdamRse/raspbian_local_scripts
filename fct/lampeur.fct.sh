@@ -19,6 +19,15 @@ check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à l
             eout "Le paquet 'curl' est nécéssaire, veuillez installer curl manuellement. Arrêt du programme."
         fi
     fi
+    if ! command -v hdate &> /dev/null; then
+        wout "Le paquet 'hdate' n'est pas installé, optionel mais conseillé."
+        if ask_yn "Faut-il l'installer ?"; then
+            sudo apt update && sudo apt install -y hdate
+            check_requirements
+        else
+            wout "Le paquet 'hdate' est conseillé, sinon il faut passer par la base de données avec la table 'cycle_jour_nuit'."
+        fi
+    fi
 
 }
 
@@ -252,6 +261,7 @@ get_todays_schedule(){
     ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
     [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
     echo "${schedule}"
+    # hdate -s -l 46.022205 -L 3.908373 -z $(date +%:z | sed 's/^\([+-]\)0/\1/')
     return 0
 }
 
