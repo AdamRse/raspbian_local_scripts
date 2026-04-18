@@ -1,3 +1,4 @@
+// -- VARIABLES --
 let bt = document.getElementById("switch_Lampe");
 let stat = document.getElementById("status");
 let bd = document.querySelector("body");
@@ -8,26 +9,68 @@ let bt_marche = document.getElementById("bt-marche");
 let bt_lever = document.getElementById("bt-skip-lever");
 let bt_coucher = document.getElementById("bt-skip-coucher");
 let bt_suspend = document.getElementById("bt-suspend");
+let tb_decalage = document.getElementById("tb-decalage");
 
 let tb_lever = bt_lever.querySelector("input");
 let tb_coucher = bt_coucher.querySelector("input");
 
-get_status();
+// -- EVENTS --
 
 tb_lever.addEventListener("focusout", send_skip);
 tb_coucher.addEventListener("focusout", send_skip);
+tb_decalage.addEventListener("focusout", send_decalage);
+
 tb_lever.addEventListener("keydown", send_skip_keydown);
 tb_coucher.addEventListener("keydown", send_skip_keydown);
+tb_decalage.addEventListener("keydown", send_decalage_keydown);
 
+tb_decalage.addEventListener("focus", (event) => {
+    event.target.select();
+});
+
+// -- FONCTIONS --
+function send_decalage(event) {
+    let tb = event.target;
+    const regex = /^[0-9]{1,4}$/;
+
+    if (!tb.dataset.champ_bdd || tb.value == tb.dataset.default_val)
+        return false;
+    if (!regex.test(tb.value)) {
+        display_msg(
+            "La valeur de décalage envoyée doit être un entier positif entre 0 et 9999",
+        );
+        tb.value = tb.dataset.default_val;
+        return false;
+    }
+
+    requete_bdd.dataset.decallage = tb.value;
+    let rq = new XMLHttpRequest();
+    rq.open("GET", "./request.php?" + tb.dataset.champ_bdd + "=" + tb.value);
+    rq.onload = function () {
+        if (this.readyState === 4) {
+            if (this.response == 1) {
+                tb.blur();
+                tb.dataset.default_val = tb.value;
+                update_data();
+            } else {
+                display_msg("Une erreur s'est produite : " + this.response);
+            }
+        }
+    };
+    rq.send();
+}
+function send_decalage_keydown(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        send_decalage(event);
+    }
+}
 function send_skip_keydown(event) {
     if (event.key === "Enter") {
         event.preventDefault();
-        console.log("Entrée détectée");
         send_skip(event);
-        event.target.blur();
     }
 }
-
 function send_skip(event) {
     let tb = event.target;
     const regex = /^(\d|[1-4]\d|50)$/;
@@ -42,7 +85,6 @@ function send_skip(event) {
         return false;
     }
 
-    console.log("La diode demmande l'envoi de " + tb.value, tb);
     verouiller_toutes_diodes();
     if (tb.dataset.champ_bdd == "lampe_run_skip_allumage")
         requete_bdd.dataset.skip_allumage = tb.value;
@@ -55,6 +97,7 @@ function send_skip(event) {
         if (this.readyState === 4) {
             if (this.response == 1) {
                 tb.dataset.default_val = tb.value;
+                tb.blur();
                 update_data();
                 update_success_diode();
             } else {
@@ -64,12 +107,6 @@ function send_skip(event) {
     };
     rq.send();
 }
-
-function display_msg(text) {
-    console.log(text);
-    stat.innerHTML = text;
-}
-
 function switchLampe(gpio) {
     let rq = new XMLHttpRequest();
     rq.open("GET", "./switch.php?" + gpio);
@@ -84,7 +121,6 @@ function switchLampe(gpio) {
     };
     rq.send();
 }
-
 function get_status() {
     let rq = new XMLHttpRequest();
     rq.open("GET", "./status.php");
@@ -106,7 +142,6 @@ function set_status(val) {
         bd.style.color = "#440";
     } else console.log("Erreur de valeur status : ", val);
 }
-
 function clic_diode(diode) {
     let request = get_request_from_diode(diode);
     if (request !== false) {
@@ -180,7 +215,10 @@ function update_success_diode() {
         eteindre(bt_coucher);
     }
 }
-
+function display_msg(text) {
+    console.log(text);
+    stat.innerHTML = text;
+}
 function update_data() {
     data.dataset.decallage = requete_bdd.dataset.decallage;
     data.dataset.skip_allumage = requete_bdd.dataset.skip_allumage;
@@ -226,3 +264,6 @@ function verouiller_diode(diode) {
 function deverouiller_diode(diode) {
     //console.log("Déverouillage de la diode " + diode.id, diode);
 }
+
+// -- MAIN --
+get_status();

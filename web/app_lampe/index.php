@@ -83,9 +83,8 @@ $mysqli->close();
             <div id="bt-suspend" class="diode rouge-<?= $options_bdd["lampe_run_suspend"]==1?"run":"stop" ?>" onclick="clic_diode(this)"></div>
         </div>
         <div class="decallage">
-            <h3>Décallage manuel</h3>
-            <input type="number" inputmode="numeric" min="0" value="<?= $options_bdd["lampe_decalage"] ?>"/>
-            <button>Valider</button>
+            <h3>Décalage manuel</h3>
+            <input id="tb-decalage" type="number" inputmode="numeric" min="0" data-champ_bdd="lampe_decalage" data-default_val="<?= $options_bdd["lampe_decalage"] ?>" value="<?= $options_bdd["lampe_decalage"] ?>"/>
         </div>
         <p id="statusSkip">
 
