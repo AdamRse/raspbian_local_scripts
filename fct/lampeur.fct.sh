@@ -102,11 +102,11 @@ order_next_switch(){
     # Ajout de la fonction météo : si nuages, on ajoute du temps à l'arrêt (sombre plus tard), et on en enlève à l'allumage (sombre plus tôt)
     # Ici on recalcul le temps de pause avant le déclenchement e l'ordre calculé au plus tôt possible
     if [[ $order_type = 1 ]]; then
-        local waiting_time_sec_calculated=0 # Pour le cas où on attend un temps négatif (on envoi la demande avant le temps d'attente max de MAX_WEATHER_DELAY_SEC), on doit répercuter le temps enlevé par la remise à 0 dans le calcul suivant
+        local waiting_time_sec_calculated_negative=0 # Pour le cas où on attend un temps négatif (on envoi la demande avant le temps d'attente max de MAX_WEATHER_DELAY_SEC), on doit répercuter le temps enlevé par la remise à 0 dans le calcul suivant
         waiting_time_sec=$(( waiting_time_sec - MAX_WEATHER_DELAY_SEC ))
         debug_ "Calcul du temps d'attente vis à vis de la météo pour l'allumage, renversement pour un délai max de ${MAX_WEATHER_DELAY_SEC} : ${waiting_time_sec}s"
         if ((waiting_time_sec < 0 )); then
-            waiting_time_sec_calculated=$waiting_time_sec
+            waiting_time_sec_calculated_negative=$waiting_time_sec
             waiting_time_sec=0
             debug_ "Remise à 0 pour cause de temps négatif"
         fi
@@ -118,7 +118,7 @@ order_next_switch(){
         # On calcule le délai à ajouter (pour éteindre) ou à enlever (pour allumer)
         if weather_delay_sec=$(get_weather_delay); then
             if [[ $order_type = 1 ]]; then # Il faut l'inverser car on a enlevé du temps précédement. si 100% de nuage, on allume tout de suite.
-                weather_delay_sec=$(( MAX_WEATHER_DELAY_SEC + waiting_time_sec_calculated - weather_delay_sec ))
+                weather_delay_sec=$(( MAX_WEATHER_DELAY_SEC + waiting_time_sec_calculated_negative - weather_delay_sec ))
                 debug_ "Re-calcul du temps d'attente vis à vis de la météo pour l'allumage, compensation du renversement pour un délai max de ${MAX_WEATHER_DELAY_SEC} : ${weather_delay_sec}s"
                 (( weather_delay_sec < 0 )) && weather_delay_sec=0 && debug_ "weather_delay_sec < 0, recalibration à 0"
             fi
@@ -178,7 +178,7 @@ order_next_switch(){
     fi
 
     # On réapplique le délai enlevé par la fonction météo, sinon on va refaire le calcul pour la même journée. On cas de SKIP_ON, il seront tous décrémentés jusqu'à 0.
-    [[ $order_type = 1 ]] && sleep $MAX_WEATHER_DELAY_SEC
+    [[ $order_type = 1 ]] && sleep $(( MAX_WEATHER_DELAY_SEC + waiting_time_sec_calculated_negative ))
     return 0
 }
 
