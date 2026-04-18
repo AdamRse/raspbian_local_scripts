@@ -70,13 +70,13 @@ $mysqli->close();
             <div id="bt-marche" class="diode vert-<?= $options_bdd["lampe_run_suspend"]==0?"run":"stop" ?>" onclick="clic_diode(this)"></div>
             <div>
                 <div id="bt-skip-lever" class="diode orange-<?= $options_bdd["lampe_run_skip_allumage"]>0?"run":"stop" ?>" onclick="clic_diode(this)">
-                    <input type="number" inputmode="numeric" min="0" value="<?= $options_bdd["lampe_run_skip_allumage"] ?>"/>
+                    <input type="number" inputmode="numeric" min="0" data-champ_bdd="lampe_run_skip_allumage" data-default_val="<?= $options_bdd["lampe_run_skip_allumage"] ?>" value="<?= $options_bdd["lampe_run_skip_allumage"] ?>"/>
                 </div>
                 Lever
             </div>
             <div>
                 <div id="bt-skip-coucher" class="diode orange-<?= $options_bdd["lampe_run_skip_arret"]>0?"run":"stop" ?>" onclick="clic_diode(this)">
-                    <input type="number" inputmode="numeric" min="0" value="<?= $options_bdd["lampe_run_skip_arret"] ?>"/>
+                    <input type="number" inputmode="numeric" min="0" data-champ_bdd="lampe_run_skip_arret" data-default_val="<?= $options_bdd["lampe_run_skip_allumage"] ?>" value="<?= $options_bdd["lampe_run_skip_arret"] ?>"/>
                 </div>
                 Coucher
             </div>

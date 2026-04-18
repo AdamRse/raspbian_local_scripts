@@ -9,7 +9,66 @@ let bt_lever = document.getElementById("bt-skip-lever");
 let bt_coucher = document.getElementById("bt-skip-coucher");
 let bt_suspend = document.getElementById("bt-suspend");
 
+let tb_lever = bt_lever.querySelector("input");
+let tb_coucher = bt_coucher.querySelector("input");
+
 get_status();
+
+tb_lever.addEventListener("focusout", send_skip);
+tb_coucher.addEventListener("focusout", send_skip);
+tb_lever.addEventListener("keydown", send_skip_keydown);
+tb_coucher.addEventListener("keydown", send_skip_keydown);
+
+function send_skip_keydown(event) {
+    if (event.key === "Enter") {
+        event.preventDefault();
+        console.log("Entrée détectée");
+        send_skip(event);
+        event.target.blur();
+    }
+}
+
+function send_skip(event) {
+    let tb = event.target;
+    const regex = /^(\d|[1-4]\d|50)$/;
+
+    if (!tb.dataset.champ_bdd || tb.value == tb.dataset.default_val)
+        return false;
+    if (!regex.test(tb.value)) {
+        display_msg(
+            "La valeur SKIP envoyée doit être un entier positif entre 0 et 50",
+        );
+        tb.value = tb.dataset.default_val;
+        return false;
+    }
+
+    console.log("La diode demmande l'envoi de " + tb.value, tb);
+    verouiller_toutes_diodes();
+    if (tb.dataset.champ_bdd == "lampe_run_skip_allumage")
+        requete_bdd.dataset.skip_allumage = tb.value;
+    else if (tb.dataset.champ_bdd == "lampe_run_skip_arret")
+        requete_bdd.dataset.skip_arret = tb.value;
+    let rq = new XMLHttpRequest();
+    rq.open("GET", "./request.php?" + tb.dataset.champ_bdd + "=" + tb.value);
+    rq.onload = function () {
+        deverouiller_toutes_diodes();
+        if (this.readyState === 4) {
+            if (this.response == 1) {
+                tb.dataset.default_val = tb.value;
+                update_data();
+                update_success_diode();
+            } else {
+                display_msg("Une erreur s'est produite : " + this.response);
+            }
+        }
+    };
+    rq.send();
+}
+
+function display_msg(text) {
+    console.log(text);
+    stat.innerHTML = text;
+}
 
 function switchLampe(gpio) {
     let rq = new XMLHttpRequest();
@@ -19,7 +78,7 @@ function switchLampe(gpio) {
             if (this.response == 1) {
                 get_status();
             } else {
-                stat.innerHTML = "Une erreur s'est produite : " + this.response;
+                display_msg("Une erreur s'est produite : " + this.response);
             }
         }
     };
@@ -61,8 +120,8 @@ function clic_diode(diode) {
                     update_data();
                     update_success_diode();
                 } else {
-                    alert(
-                        "Le script de skip retourne une erreur.\n" +
+                    display_msg(
+                        "Le script request.php retourne une erreur :<br/>" +
                             this.response,
                     );
                 }
@@ -162,8 +221,8 @@ function deverouiller_toutes_diodes() {
     all_diodes.forEach((diode) => deverouiller_diode(diode));
 }
 function verouiller_diode(diode) {
-    console.log("Verouillage de la diode " + diode.id, diode);
+    //console.log("Verouillage de la diode " + diode.id, diode);
 }
 function deverouiller_diode(diode) {
-    console.log("Déverouillage de la diode " + diode.id, diode);
+    //console.log("Déverouillage de la diode " + diode.id, diode);
 }
