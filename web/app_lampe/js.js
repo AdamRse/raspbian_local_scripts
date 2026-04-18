@@ -51,12 +51,11 @@ function set_status(val) {
 function clic_diode(diode) {
     let request = get_request_from_diode(diode);
     if (request !== false) {
+        verouiller_toutes_diodes();
         let rq = new XMLHttpRequest();
         rq.open("GET", "./request.php?" + request);
         rq.onload = function () {
-            if (this.readyState === 1) {
-                verouiller_toutes_diodes();
-            } else if (this.readyState === 4) {
+            if (this.readyState === 4) {
                 deverouiller_toutes_diodes();
                 if (this.response == 1) {
                     update_data();
@@ -155,12 +154,16 @@ function eteindre(diode) {
 }
 
 function verouiller_toutes_diodes() {
-    let all_diodes = querySelectorAll("input.diode");
+    let all_diodes = document.querySelectorAll("#bt_dashboard div.diode");
     all_diodes.forEach((diode) => verouiller_diode(diode));
 }
 function deverouiller_toutes_diodes() {
-    let all_diodes = querySelectorAll("input.diode");
+    let all_diodes = document.querySelectorAll("#bt_dashboard div.diode");
     all_diodes.forEach((diode) => deverouiller_diode(diode));
 }
-function verouiller_diode(diode) {}
-function deverouiller_diode(diode) {}
+function verouiller_diode(diode) {
+    console.log("Verouillage de la diode " + diode.id, diode);
+}
+function deverouiller_diode(diode) {
+    console.log("Déverouillage de la diode " + diode.id, diode);
+}
