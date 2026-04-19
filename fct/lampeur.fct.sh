@@ -35,8 +35,37 @@ set_check_globals(){
     check_vars_exist "ROOT_DIR SCRIPT_PATH"
     [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh" && [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "Impossible de commuter la lampe, la variable globale SWITCH_SCRIPT_PATH n'est pas définie."
 
+    [[ -z $GPIO_ID ]] && eout "Variable GPIO_ID obligatoire dans le .env. Ajouter l'identifiant du GPIO à commander pour contrôler pour la lampe."
+    [[ ! $GPIO_ID =~ ^[0-9]+$ ]] && eout "La variable GPIO_ID du .env doit être un nombre. En cas de mise à jour de la convention de nommage des GPIO, modifiez cette ligne dans ${FUNCNAME}(), cette vérification est devenue obsolète."
+
+    if [[ -n $PARAM_WEATHER_DELAY ]]; then
+        for entry in "${PARAM_WEATHER_DELAY[@]}"; do
+            IFS=":" read -r percent delay <<< "${entry}"
+            [[ -z $percent || -z $delay ]] && eout "Fichier .env : PARAM_WEATHER_DELAY mal structuré. Doit être de la forme PARAM_WEATHER_DELAY=('<pourcentage nuages>:<délai ajouté en secondes>' '100:3600' '50:900'...)"
+            [[ ! $percent =~ ^[0-9]{1,3}$ ]] && eout "Fichier .env : PARAM_WEATHER_DELAY mal structuré. Le chiffre avant le séparateur ':' doit être un nombre entier (pourcentage de couverture nuageuse)"
+            (( percent < 0 || percent > 100 )) && eout "Fichier .env : PARAM_WEATHER_DELAY mal structuré. Le chiffre avant le séparateur ':' doit être un nombre entier entre 0-100"
+            [[ ! $delay =~ ^[0-9]{1,4}$ ]] && eout "Fichier .env : PARAM_WEATHER_DELAY mal structuré. Le chiffre après le séparateur ':' doit être un nombre entier entre 0 et 9999 (secondes de délai en foonction de la couverture nuageuse)"
+        done
+    fi
+
     MAX_WEATHER_DELAY_SEC=$(get_max_weather_delay)
 
+    if [[ -n $LATITUDE && -n $LONGITUDE ]]; then
+        [[ ! $LATITUDE =~ ^-?[0-9]{1,2}\.[0-9]{1,6}$ ]] && eout "La LATITUDE donnée dans le .env n'est pas une latitude (entre -90.0 et +90.0). S'il n'y a pas de décimales, entrez xx.0"
+        ! awk -v lat="$LATITUDE" 'BEGIN {exit !(lat >= -90 && lat <= 90)}' && eout "La LATITUDE donnée dans le .env n'est pas une latitude (entre -90.0 et +90.0)"
+        [[ ! $LONGITUDE =~ ^-?[0-9]{1,3}\.[0-9]{1,6}$ ]] && eout "La LONGITUDE donnée dans le .env n'est pas une latitude (entre -180.0 et +180.0). S'il n'y a pas de décimales, entrez xx.0"
+        ! awk -v lon="$LONGITUDE" 'BEGIN {exit !(lon >= -180 && lon <= 180)}' && eout "La LONGITUDE donnée dans le .env n'est pas une latitude (entre -180.0 et +180.0)"
+    else
+        wout "Coordonnées météo manquantes (LATITUDE, LONGITUDE) dans le .env, désactivation de la fonction météo"
+        MAX_WEATHER_DELAY_SEC=0
+    fi
+
+    if [[ -z $OPEN_WEATHER_API_KEY ]]; then
+        wout "Clé API Open Weather manquante (OPEN_WEATHER_API_KEY) dans le .env, désactivation de la fonction météo"
+        MAX_WEATHER_DELAY_SEC=0
+    fi
+
+    lout "✅ Variables globales cohérentes"
     refresh_opt
 }
 
@@ -178,7 +207,7 @@ order_next_switch(){
     fi
 
     # On réapplique le délai enlevé par la fonction météo, sinon on va refaire le calcul pour la même journée. On cas de SKIP_ON, il seront tous décrémentés jusqu'à 0.
-    [[ $order_type = 1 ]] && sleep $(( MAX_WEATHER_DELAY_SEC + waiting_time_sec_calculated_negative ))
+    [[ $order_type = 1 ]] && sleep $(( MAX_WEATHER_DELAY_SEC - weather_delay_sec + 1 ))
     return 0
 }
 
