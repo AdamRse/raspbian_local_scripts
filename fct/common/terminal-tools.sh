@@ -1,4 +1,5 @@
-# -- VARIABLES --
+# -- VARIABLES LOGS JOURNAL --
+# Coucleurs
 S_ERROR=""
 S_SUCCESS=""
 S_WARNING=""
@@ -8,7 +9,17 @@ S_PROCESS=""
 S_BOLD=""
 S_END=""
 
-# Mode terminal
+# Tags
+SPACE=" "
+T_INFO="[INFO]${SPACE}"
+T_SUCCESS="[ :D ]${SPACE}"
+T_WARNING="[WARN]${SPACE}"
+T_FAIL="[FAIL]${SPACE}"
+T_ERROR="[ ERR]${SPACE}"
+T_DEBUG="[DBUG]${SPACE}"
+T_PARAM="[ PRM]${SPACE}"
+
+# -- VARIABLES CONSOLE --
 if [ -t 1 ]; then
     # Styles pour les logs
     S_ERROR=$(tput setaf 9)         # Rouge vif
@@ -26,6 +37,16 @@ if [ -t 1 ]; then
     S_BOLD=$(tput bold)             # Gras
     S_END=$(tput sgr0)              # Balise de fin de styles
     #S_END='\033[0m'                # Balise de fin de styles
+
+    SPACE="\t"
+
+    T_INFO="[INFO]${SPACE}"
+    T_SUCCESS="[ :D ]${SPACE}"
+    T_WARNING="[WARN]${SPACE}"
+    T_FAIL="[FAIL]${SPACE}"
+    T_ERROR="[ERROR]${SPACE}"
+    T_DEBUG="[DEBUG]${SPACE}"
+    T_PARAM="[PARAM]${SPACE}"
 fi
 
 # -- LOGS --
@@ -33,36 +54,36 @@ fi
 # Log standard
 lout(){
     local message=$1
-    [ -z "$message" ] && echo "lout() : Aucun paramètre passé pour message" >&2
-    echo -e "${S_INFO}[INFO]${S_END}\t${message}"
+    [[ -z "$message" ]] && echo "lout() : Aucun paramètre passé pour message" >&2
+    echo -e "${S_INFO}${T_INFO}${S_END}${message}"
 }
 
 # Success
 sout(){
     local message=$1
-    [ -z "$message" ] && echo "sout() : Aucun paramètre passé pour message" >&2
-    echo -e "${S_SUCCESS}[ :D ]${S_END}\t${message} ${S_SUCCESS}✓${S_END}"
+    [[ -z "$message" ]] && echo "sout() : Aucun paramètre passé pour message" >&2
+    echo -e "${S_SUCCESS}${T_SUCCESS}${S_END}${message} ${S_SUCCESS}✓${S_END}"
 }
 
 # Warning, le script continue
 wout(){
     local message=$1
-    [ -z "$message" ] && echo "wout() : Aucun paramètre passé pour message" >&2
-    echo -e "${S_WARNING}[WARN]${S_END}\t${message}" >&2
+    [[ -z "$message" ]] && echo "wout() : Aucun paramètre passé pour message" >&2
+    echo -e "${S_WARNING}${T_WARNING}${S_END}${message}" >&2
 }
 
 # Fail, erreur mais le script continue
 fout(){
     local message=$1
-    [ -z "$message" ] && echo "fout() : Aucun paramètre passé pour message" >&2
-    echo -e "${S_ERROR}[FAIL]${S_END}\t${message}" >&2
+    [[ -z "$message" ]] && echo "fout() : Aucun paramètre passé pour message" >&2
+    echo -e "${S_ERROR}${T_FAIL}${S_END}${message}" >&2
 }
 
-# Erreur, arrête le script
+# Error, arrête le script
 eout(){
     local message=$1
-    [ -z "$message" ] && echo "eout() : Aucun paramètre passé pour message" >&2
-    echo -e "${S_ERROR}[ERROR]${S_END}\t${message}" >&2
+    [[ -z "$message" ]] && echo "eout() : Aucun paramètre passé pour message" >&2
+    echo -e "${S_ERROR}${T_ERROR}${S_END}${message}" >&2
     exit 1
 }
 
@@ -70,8 +91,8 @@ eout(){
 debug_(){
     if [ "${DEBUG_MODE}" = true ]; then
         local message=$1
-        [ -z "$message" ] && echo "debug_() : Aucun paramètre passé pour message" >&2
-        echo -e "[DEBUG]\t${message}"
+        [[ -z "$message" ]] && echo "debug_() : Aucun paramètre passé pour message" >&2
+        echo -e "${T_DEBUG}${message}"
     fi
 }
 
@@ -85,7 +106,7 @@ ask_yn () {
     fi
 
     while true; do
-        echo -ne "${S_PARAM}[PARAM]${S_END} $1 (o/n)"
+        echo -ne "${S_PARAM}${T_PARAM}${S_END} $1 (o/n)"
         read -n 1 -p "" response
         echo ""
         # Vérification de la réponse
