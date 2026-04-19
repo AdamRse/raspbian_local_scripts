@@ -6,22 +6,22 @@ let data = document.getElementById("data");
 let requete_bdd = document.getElementById("requete_bdd");
 
 let bt_marche = document.getElementById("bt-marche");
-let bt_lever = document.getElementById("bt-skip-lever");
-let bt_coucher = document.getElementById("bt-skip-coucher");
+let diode_matin = document.getElementById("bt-skip-matin");
+let diode_soir = document.getElementById("bt-skip-soir");
 let bt_suspend = document.getElementById("bt-suspend");
 let tb_decalage = document.getElementById("tb-decalage");
 
-let tb_lever = bt_lever.querySelector("input");
-let tb_coucher = bt_coucher.querySelector("input");
+let tb_matin = diode_matin.querySelector("input");
+let tb_soir = diode_soir.querySelector("input");
 
 // -- EVENTS --
 
-tb_lever.addEventListener("focusout", send_skip);
-tb_coucher.addEventListener("focusout", send_skip);
+tb_matin.addEventListener("focusout", send_skip);
+tb_soir.addEventListener("focusout", send_skip);
 tb_decalage.addEventListener("focusout", send_decalage);
 
-tb_lever.addEventListener("keydown", send_skip_keydown);
-tb_coucher.addEventListener("keydown", send_skip_keydown);
+tb_matin.addEventListener("keydown", send_skip_keydown);
+tb_soir.addEventListener("keydown", send_skip_keydown);
 tb_decalage.addEventListener("keydown", send_decalage_keydown);
 
 tb_decalage.addEventListener("focus", (event) => {
@@ -75,7 +75,7 @@ function send_skip(event) {
     let tb = event.target;
     const regex = /^(\d|[1-4]\d|50)$/;
 
-    if (!tb.dataset.champ_bdd || tb.value == tb.dataset.default_val)
+    if (tb.value == tb.dataset.default_val || !tb.dataset.champ_bdd)
         return false;
     if (!regex.test(tb.value)) {
         display_msg(
@@ -175,13 +175,13 @@ function get_request_from_diode(button) {
             requete_bdd.dataset.suspend = 0;
             return "lampe_run_suspend=0";
         }
-    } else if (button === bt_lever) {
+    } else if (button === diode_matin) {
         // On n'envoie pas avec un clic, on enverra avec onchange, on sélectionne juste l'input à saisir
         let tb = button.querySelector("input");
         tb.select();
         tb.focus();
         return false;
-    } else if (button === bt_coucher) {
+    } else if (button === diode_soir) {
         // On n'envoie pas avec un clic, on enverra avec onchange, on sélectionne juste l'input à saisir
         let tb = button.querySelector("input");
         tb.select();
@@ -205,14 +205,14 @@ function update_success_diode() {
         eteindre(bt_marche);
     }
     if (data.dataset.skip_allumage > 0) {
-        allumer(bt_lever);
+        allumer(diode_soir);
     } else {
-        eteindre(bt_lever);
+        eteindre(diode_soir);
     }
     if (data.dataset.skip_arret > 0) {
-        allumer(bt_coucher);
+        allumer(diode_matin);
     } else {
-        eteindre(bt_coucher);
+        eteindre(diode_matin);
     }
 }
 function display_msg(text) {
@@ -229,7 +229,7 @@ function allumer(diode) {
     if (diode === bt_marche) {
         diode.classList.add("vert-run");
         diode.classList.remove("vert-stop");
-    } else if (diode === bt_lever || diode === bt_coucher) {
+    } else if (diode === diode_matin || diode === diode_soir) {
         diode.classList.add("orange-run");
         diode.classList.remove("orange-stop");
     } else if (diode === bt_suspend) {
@@ -241,7 +241,7 @@ function eteindre(diode) {
     if (diode === bt_marche) {
         diode.classList.add("vert-stop");
         diode.classList.remove("vert-run");
-    } else if (diode === bt_lever || diode === bt_coucher) {
+    } else if (diode === diode_matin || diode === diode_soir) {
         diode.classList.add("orange-stop");
         diode.classList.remove("orange-run");
     } else if (diode === bt_suspend) {
