@@ -40,6 +40,8 @@ check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à l
 
 }
 
+# Vérifie et paramètre les variables globales
+# return true|exit
 set_check_globals(){
     check_vars_exist "ROOT_DIR SCRIPT_PATH"
     [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && SWITCH_SCRIPT_PATH="${ROOT_DIR}/lampe_switch_pi_OS.sh" && [[ ! -f ${SWITCH_SCRIPT_PATH} ]] && eout "Impossible de commuter la lampe, la variable globale SWITCH_SCRIPT_PATH n'est pas définie."
