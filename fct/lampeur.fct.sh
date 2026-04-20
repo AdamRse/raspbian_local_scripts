@@ -307,7 +307,7 @@ get_todays_schedule(){
         sunwait=$(LC_TIME=C rjd-sunwait.sunwait list 1 daylight d $day m $month y $year "${LATITUDE}N" "${LONGITUDE}E") || eout "${FUNCTNAME}() : rjd-sunwait.sunwait renvoie une erreur. Paramètres passés : ${day}/${month}/${year}"
         IFS=", " read sunrise sunset <<< "$sunwait"
         debug_ "Sunwait : Paramètres trouvés pour aujourd'hui : Lever do soleil à ${sunrise}, coucher du soleil à ${sunset}"
-        schedule="${sunrise} ${sunset}"
+        schedule="${sunrise}:00 ${sunset}:30"
     else
         ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
         [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
