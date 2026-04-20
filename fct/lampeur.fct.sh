@@ -19,13 +19,22 @@ check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à l
             eout "Le paquet 'curl' est nécéssaire, veuillez installer curl manuellement. Arrêt du programme."
         fi
     fi
-    if ! command -v hdate &> /dev/null; then
-        wout "Le paquet 'hdate' n'est pas installé, optionel mais conseillé."
+    if ! command -v snap &> /dev/null; then
+        wout "Le paquet 'snapd' n'est pas installé, optionel mais conseillé."
         if ask_yn "Faut-il l'installer ?"; then
-            sudo apt update && sudo apt install -y hdate
+            sudo apt update && sudo apt install -y snapd
             check_requirements
         else
-            wout "Le paquet 'hdate' est conseillé, sinon il faut passer par la base de données avec la table 'cycle_jour_nuit'."
+            wout "Le paquet 'snap' est conseillé, sinon il faut passer par la base de données avec la table 'cycle_jour_nuit'."
+        fi
+    fi
+    if ! command -v rjd-sunwait.sunwait &> /dev/null; then
+        wout "Le paquet 'sunwait' n'est pas installé, optionel mais conseillé."
+        if ask_yn "Faut-il l'installer ?"; then
+            sudo snap install rjd-sunwait --edge
+            check_requirements
+        else
+            wout "Le paquet 'sunwait' est conseillé, sinon il faut passer par la base de données avec la table 'cycle_jour_nuit'."
         fi
     fi
 
@@ -287,19 +296,43 @@ double_switch_signal(){
 
 get_todays_schedule(){
     local schedule
-    ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
-    [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
+    if command -v rjd-sunwait.sunwait &> /dev/null; then
+        local day
+        local month
+        local year
+        local sunwait
+        local sunrise
+        local sunset
+        read -r day month year <<< $(date +'%d %m %y')
+        sunwait=$(LC_TIME=C rjd-sunwait.sunwait list 1 daylight d $day m $month y $year "${LATITUDE}N" "${LONGITUDE}E") || eout "${FUNCTNAME}() : rjd-sunwait.sunwait renvoie une erreur. Paramètres passés : ${day}/${month}/${year}"
+        IFS=", " read sunrise sunset <<< "$sunwait"
+        debug_ "Sunwait : Paramètres trouvés pour aujourd'hui : Lever do soleil à ${sunrise}, coucher du soleil à ${sunset}"
+        schedule="${sunrise} ${sunset}"
+    else
+        ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+        [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
+    fi
+
     echo "${schedule}"
-    # hdate -s -l 46.022205 -L 3.908373 -z $(date +%:z | sed 's/^\([+-]\)0/\1/')
-    return 0
 }
 
 get_ut_tomorrows_sunset(){
-    local ut_tomorrow=$(($(date +%s) + 86400))
-    ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d @${ut_tomorrow} +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
-    [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
-    echo $(( $(date -d "${schedule}" +%s) + 86400 ))
-    return 0
+    local schedule
+    if command -v rjd-sunwait.sunwait &> /dev/null; then
+        local day
+        local month
+        local year
+        local sunrise
+        read -r day month year <<< "$(date -d "tomorrow" +'%d %m %y')"
+        sunrise=$(LC_TIME=C rjd-sunwait.sunwait list 1 daylight rise d $day m $month y $year "${LATITUDE}N" "${LONGITUDE}E") || eout "${FUNCTNAME}() : rjd-sunwait.sunwait renvoie une erreur. Paramètres passés : ${day}/${month}/${year}"
+        debug_ "Sunwait : Paramètres trouvés pour demain : Lever du soleil à ${sunrise}"
+        schedule="${sunrise}:00"
+    else
+        ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d "tomorrow" +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
+        [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
+        schedule=$(( $(date -d "${schedule}" +%s) + 86400 ))
+    fi
+    echo "$schedule"
 }
 
 convert_readable_date_from_ut(){
