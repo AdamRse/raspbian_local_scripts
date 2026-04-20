@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.1.1
+-- version 5.2.2deb1+deb13u1
 -- https://www.phpmyadmin.net/
 --
--- Hôte : localhost
--- Généré le : ven. 12 déc. 2025 à 09:55
--- Version du serveur : 10.3.39-MariaDB-0+deb10u2
--- Version de PHP : 7.3.31-1~deb10u7
+-- Hôte : localhost:3306
+-- Généré le : lun. 20 avr. 2026 à 05:44
+-- Version du serveur : 11.8.6-MariaDB-0+deb13u1 from Debian
+-- Version de PHP : 8.4.16
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -409,20 +409,6 @@ INSERT INTO `cycle_jour_nuit` (`journee`, `lever`, `coucher`, `culmination`, `du
 -- --------------------------------------------------------
 
 --
--- Structure de la table `info_acces_externe`
---
-
-CREATE TABLE `info_acces_externe` (
-  `id` int(11) NOT NULL,
-  `ip` varchar(15) NOT NULL,
-  `info_server` text NOT NULL,
-  `info_header` text NOT NULL,
-  `time` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Structure de la table `liste_blanche_acces`
 --
 
@@ -431,19 +417,6 @@ CREATE TABLE `liste_blanche_acces` (
   `ip` varchar(15) NOT NULL,
   `user_agent` varchar(511) NOT NULL,
   `time` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Structure de la table `liste_nolog_acces`
---
-
-CREATE TABLE `liste_nolog_acces` (
-  `id` int(11) NOT NULL,
-  `ip` varchar(15) NOT NULL,
-  `user_agent` varchar(127) NOT NULL,
-  `dt_creation` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -463,45 +436,20 @@ CREATE TABLE `opt` (
 --
 
 INSERT INTO `opt` (`nom_opt`, `valeur`, `note`) VALUES
-('lampe_decalage', '0', '(string) Décalage en secondes du déclenchage de la lampe avec le coucher et le lever du soleil (au lever du soleil il fait jour bien avant, au coucher il fait nuit bien après)'),
-('lampe_run_cycle', '820', '(false | int)\nLa guirlande doit s\'allumer à la tombée de la nuit ou non.\nSi le programme tourne, la valeur est son PID'),
-('lampe_run_skip', '0', 'Skip le basculement de la lampe.\n0 = on ne skip pas\n1 = On skip une fois seulement (après le skip la valeur retourne automatiquement à 0)\n2 = skip permanent jusqu\'à changement manuel'),
+('lampe_decalage', '0', '(string) Décalage en secondes du déclenchement de la lampe avec le coucher et le lever du soleil (au lever du soleil il fait jour bien avant, au coucher il fait nuit bien après)'),
+('lampe_run_skip_allumage', '0', 'Skip seulement l\'allumage de la lampe, autant de fois que souhaité\r\n0 = Aucun skip\r\nN = On skip N fois'),
+('lampe_run_skip_arret', '0', 'Skip seulement l\'arrêt de la lampe, autant de fois que souhaité\r\n0 = Aucun skip\r\nN = On skip N fois'),
+('lampe_run_suspend', '0', '0 : cycle normal\r\n1 : La lampe n\'est plus basulée jusqu\'à remise à 0 manuellement'),
 ('monitoring_frequence', '1', '(int) en secondes, fréquence d\'horloge du monitoring'),
 ('monitoring_ram_alert', '0', '(bool) Donner l\'alerte ou non quand la ram atteint un certain niveau d\'utilisation, donné par \'opt.monitoring_ram_alert_limit\''),
 ('monitoring_ram_alert_limit', '3300000000', '(int) nombre d\'octets d\'espace utilisé de la ram qui déclenchera l\'alerte'),
-('monitoring_run', '787', 'Surveillance de la température processeur, de la mémoire vive'),
+('monitoring_run', '', 'Surveillance de la température processeur, de la mémoire vive'),
 ('temperature_frequence_check', '1', '(int) =secondes. Fréquence à laquelle la température du serveur est relevée '),
-('temperature_run', '691', '(string)PID | 0'),
+('temperature_run', '', '(string)PID | 0'),
 ('temperature_warning_1', '42', 'Valeur à laquelle la températeure est considérée comme élevée, mais acceptable (comme en période de chaleur ou de forte sollicitation).'),
-('temperature_warning_2', '49', 'Température limite de fonctionnement normal. Ce seuil franchi, il faut chercher à faire redescendre la température.'),
+('temperature_warning_2', '55', 'Température limite de fonctionnement normal. Ce seuil franchi, il faut chercher à faire redescendre la température.'),
 ('temperature_warning_alert_trigger', '1', '(bool) : déclencher l\'alerte warning en cas de surchauffe du processeur, défini par la colonne \"temperature_warning_alert_trigger_limit\"'),
-('temperature_warning_alert_trigger_limit', '55', '(int) : limite à partir de laquelle l\'alerte de température du processeur est déclenchée');
-
--- --------------------------------------------------------
-
---
--- Structure de la table `ram`
---
-
-CREATE TABLE `ram` (
-  `id` int(11) NOT NULL,
-  `utilisee` int(11) NOT NULL COMMENT 'en bit',
-  `partagee` int(11) NOT NULL COMMENT 'en bit',
-  `buff_cache` int(11) NOT NULL COMMENT 'en bit',
-  `time` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
--- Structure de la table `temp_log`
---
-
-CREATE TABLE `temp_log` (
-  `id` int(11) NOT NULL,
-  `temperature` varchar(5) NOT NULL,
-  `timestamp` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+('temperature_warning_alert_trigger_limit', '75', '(int) : limite à partir de laquelle l\'alerte de température du processeur est déclenchée');
 
 --
 -- Index pour les tables déchargées
@@ -514,21 +462,9 @@ ALTER TABLE `cycle_jour_nuit`
   ADD PRIMARY KEY (`journee`);
 
 --
--- Index pour la table `info_acces_externe`
---
-ALTER TABLE `info_acces_externe`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Index pour la table `liste_blanche_acces`
 --
 ALTER TABLE `liste_blanche_acces`
-  ADD PRIMARY KEY (`id`);
-
---
--- Index pour la table `liste_nolog_acces`
---
-ALTER TABLE `liste_nolog_acces`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -538,49 +474,13 @@ ALTER TABLE `opt`
   ADD PRIMARY KEY (`nom_opt`);
 
 --
--- Index pour la table `ram`
---
-ALTER TABLE `ram`
-  ADD PRIMARY KEY (`id`);
-
---
--- Index pour la table `temp_log`
---
-ALTER TABLE `temp_log`
-  ADD PRIMARY KEY (`id`);
-
---
 -- AUTO_INCREMENT pour les tables déchargées
 --
-
---
--- AUTO_INCREMENT pour la table `info_acces_externe`
---
-ALTER TABLE `info_acces_externe`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT pour la table `liste_blanche_acces`
 --
 ALTER TABLE `liste_blanche_acces`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT pour la table `liste_nolog_acces`
---
-ALTER TABLE `liste_nolog_acces`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT pour la table `ram`
---
-ALTER TABLE `ram`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT pour la table `temp_log`
---
-ALTER TABLE `temp_log`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
