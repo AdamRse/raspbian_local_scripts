@@ -1,6 +1,6 @@
 [Unit]
 Description=Gestion de la lampe pour raspberry pi
-After=network-online.target
+After=network-online.target mysql.service
 Wants=network-online.target
 
 [Service]
