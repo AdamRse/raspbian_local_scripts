@@ -13,13 +13,6 @@ exec("systemctl is-active lampeur.service > /dev/null 2>&1", $output, $returnCod
 $serviceLampeActive=($returnCode==0);
 
 require "env.mysqli.php";
-// env.mysqli.php contient :
-// $mysqli = new mysqli(
-//     "host",
-//     "user",
-//     "password",
-//     "database",
-// );
 
 $result = $mysqli->query("SELECT nom_opt, valeur FROM opt WHERE nom_opt = 'lampe_decalage' OR nom_opt = 'lampe_run_skip_allumage' OR nom_opt = 'lampe_run_skip_arret' OR nom_opt = 'lampe_run_suspend'",);
 $options_bdd = [];
