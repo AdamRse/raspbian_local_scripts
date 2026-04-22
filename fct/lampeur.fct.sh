@@ -70,6 +70,8 @@ is_gpio_user(){
     fi
 }
 
+# Test l'accès à plusieurs tables dans la base de données
+# return true|exit
 test_db_connect(){
     local tables="cycle_jour_nuit opt"
     local connect_db
