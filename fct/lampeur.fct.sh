@@ -253,6 +253,8 @@ get_delay_from_clouds_percent() {
     echo "${found_delay}"
 }
 
+# Renvoie un pourcentage de couverture nuageuse en fonction des coordonnées entrées dans le .env
+# return "<int 1-100>"| false
 get_clouds_percent_from_weather_api(){
     local json_answer
     [[ -z $OPEN_WEATHER_API_KEY ]] && wout "Aucune clé API fournie pour open weather. Pour ajouter une clé api, ajoutez là dans OPEN_WEATHER_API_KEY dans le .env" && return 1
