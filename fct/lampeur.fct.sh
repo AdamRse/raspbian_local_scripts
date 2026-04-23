@@ -19,6 +19,10 @@ check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à l
             eout "Le paquet 'curl' est nécéssaire, veuillez installer curl manuellement. Arrêt du programme."
         fi
     fi
+    if ! command -v solunar &> /dev/null && ! command -v "${ROOT_DIR}/bin/solunar2-aarch64" &> /dev/null; then
+        wout "Solunar 2 n'est pas installé, c'est un programme optionel qui sera utilisé pour déterminer les horaires de lever et coucher du soleil localement. Installez-le et rendez-le executable pour ${USER} si vous voulez utiliser solunar 2."
+        ask_yn "La base de données sera utilisée par défaut (moins précise) Continuer sans solunar 2 ?" || lout "Arrêt du programme par l'utilisateur." && exit 0
+    fi
 }
 
 # Vérifie et paramètre les variables globales
@@ -30,6 +34,7 @@ set_check_globals(){
     [[ -z $GPIO_ID ]] && eout "Variable GPIO_ID obligatoire dans le .env. Ajouter l'identifiant du GPIO à commander pour contrôler pour la lampe."
     [[ ! $GPIO_ID =~ ^[0-9]+$ ]] && eout "La variable GPIO_ID du .env doit être un nombre. En cas de mise à jour de la convention de nommage des GPIO, modifiez cette ligne dans ${FUNCNAME}(), cette vérification est devenue obsolète."
 
+    # METEO
     if [[ -n $PARAM_WEATHER_DELAY ]]; then
         for entry in "${PARAM_WEATHER_DELAY[@]}"; do
             IFS=":" read -r percent delay <<< "${entry}"
@@ -57,6 +62,22 @@ set_check_globals(){
         MAX_WEATHER_DELAY_SEC=0
     fi
 
+    # SOLUNAR
+    local solunar_cmd="solunar"
+    if command -v "${solunar_cmd}" &> /dev/null; then
+        SOLUNAR_CMD="${solunar_cmd}"
+    else
+        solunar_cmd="${ROOT_DIR}/bin/solunar2-aarch64"
+        if command -v "${solunar_cmd}" &> /dev/null; then
+            SOLUNAR_CMD="${solunar_cmd}"
+        else
+            fout "Solunar inaccessible pour ${USER}. Il est conseillé d'utiliser solunar pour calculer localement l'heure de lever et de coucher du soleil."
+            lout "Sur une architecture arm64, vous pouvez simplement rendre ${solunar_cmd} executable par ${USER}. Si non compatible, installez https://github.com/kevinboone/solunar2"
+        fi
+    fi
+    command -v "${solunar_cmd}" &> /dev/null && lout "Solunar utilisera la timezone locale"
+
+    # END
     lout "✅ Variables globales cohérentes"
     refresh_opt
 }
@@ -279,45 +300,61 @@ double_switch_signal(){
     return 0
 }
 
-get_todays_schedule(){
-    local schedule
-    # if command -v rjd-sunwait.sunwait &> /dev/null; then
-    #     local day
-    #     local month
-    #     local year
-    #     local sunwait
-    #     local sunrise
-    #     local sunset
-    #     read -r day month year <<< $(date +'%d %m %y')
-    #     sunwait=$(LC_TIME=C rjd-sunwait.sunwait list 1 daylight d $day m $month y $year "${LATITUDE}N" "${LONGITUDE}E") || eout "${FUNCTNAME}() : rjd-sunwait.sunwait renvoie une erreur. Paramètres passés : ${day}/${month}/${year}"
-    #     IFS=", " read sunrise sunset <<< "$sunwait"
-    #     debug_ "Sunwait : Paramètres trouvés pour aujourd'hui : Lever do soleil à ${sunrise}, coucher du soleil à ${sunset}"
-    #     schedule="${sunrise}:00 ${sunset}:30"
-    # else
-        ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '$(date +%d%m)'") && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
-        [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
-    # fi
+# Retourne la date de lever et de coucher du soleil pour la journée donnée en temps UNIX, en utilisant solunar (par defaut : aujourd'hui)
+# $1 (optionel) : date_ut_request : unix timestamp  : Date à laquelle renvoyer l'heure de lever et de coucher du soleil. Par défaut : now
+# return "<heure lever HH:MM:SS> <heure coucher HH:MM:SS>"|false
+get_schedule_from_ut_solunar(){
+    local date_ut_request=${1:-$(date +"%s")}
+    local ans_solunar=""
+    local sunrise
+    local sunset
+    [[ ! $date_ut_request =~ ^[0-9]{10}$ ]] && fout "${FUNCTION}() : la date passée doit être au format timestamp UNIX (10 chiffres). Argument reçu : ${date_ut_request}." && return 1
+    local date_request=$(date -d "@${date_ut_request}" "+%Y-%m-%d")
+    [[ ! $date_request =~ ^2[0-9]{3}\-(0|1)[0-9]\-[0-3][0-9]$ ]] && fout "${FUNCTION}() : la date passée doit être post 2000 et au format YYYY-MM-DD. Argument reçu : ${date_request}." && return 1
+    ! command -v $SOLUNAR_CMD &> /dev/null && debug_ "${FUNCTION}() : Commande '${SOLUNAR_CMD}' impossibele à executer pour ${USER}" && return 1
 
-    echo "${schedule}"
+    ! ans_solunar="$($SOLUNAR_CMD -d $date_request -l $LATITUDE -o $LONGITUDE 2>/dev/null)" && debug_ "${FUNCTION}() : La commande '${SOLUNAR_CMD}' a échouée. Retour : ${ans_solunar}" && return 1
+
+    sunrise=$(echo "${ans_solunar}" | grep "Sunrise" | awk '{print $2}')
+    sunset=$(echo "${ans_solunar}" | grep "Sunset" | awk '{print $2}')
+
+    [[ ! $sunrise =~ ^[0-9]{2}\:[0-9]{2}$ ]] && debug_ "${FUNCTION}() : La récupération de sunrise a échoué. La commande '${SOLUNAR_CMD}' retourne : ${ans_solunar}" && return 1
+    [[ ! $sunset =~ ^[0-9]{2}\:[0-9]{2}$ ]] && debug_ "${FUNCTION}() : La récupération de sunrise a sunset. La commande '${SOLUNAR_CMD}' retourne : ${ans_solunar}" && return 1
+
+    echo "${sunrise}:00 ${sunset}:00"
 }
 
+# Retourne la date de lever et de coucher du soleil pour la journée donnée en temps UNIX, en utilisant la base de données installée (par defaut : aujourd'hui)
+# $1 (optionel) : date_ut_request : unix timestamp  : Date à laquelle renvoyer l'heure de lever et de coucher du soleil. Par défaut : now
+# return "<heure lever HH:MM:SS> <heure coucher HH:MM:SS>"|false
+get_schedule_from_ut_db(){
+    local date_ut_request=${1:-$(date +"%s")}
+    [[ ! $date_ut_request =~ ^[0-9]{10}$ ]] && fout "${FUNCTION}() : La date passée doit être au format timestamp UNIX (10 chiffres). Argument reçu : ${date_ut_request}." && return 1
+    local date_request=$(date -d "@${date_ut_request}" "+%d%m")
+    [[ ! $date_request =~ ^[0-3][0-9](0|1)[0-9]$ ]] && fout "${FUNCTION}() : L'ID de la table 'cycle_jour_nuit' n'est pas reconnu : '${date_request}'" && return 1
+
+    ! schedule="$(mysql -D "raspi_general" -N -r -e "SELECT lever, coucher FROM cycle_jour_nuit WHERE journee = '${date_request}'"| tr '\t' ' ')" && wout "${FUNCNAME}() : La base de donnée renvoie une erreur" && return 1
+    [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
+    echo "$schedule"
+}
+get_todays_schedule(){
+    local schedule
+
+    schedule=$(get_schedule_from_ut_solunar) && echo "${schedule}" && return 0
+    schedule=$(get_schedule_from_ut_db) && echo "${schedule}" && return 0
+
+    fout "${FUNCNAME}() : Impossible de trouver les horaires avec les moyens disponibles."
+    return 1
+}
 get_ut_tomorrows_sunset(){
     local schedule
-    # if command -v rjd-sunwait.sunwait &> /dev/null; then
-    #     local day
-    #     local month
-    #     local year
-    #     local sunrise
-    #     read -r day month year <<< "$(date -d "tomorrow" +'%d %m %y')"
-    #     sunrise=$(LC_TIME=C rjd-sunwait.sunwait list 1 daylight rise d $day m $month y $year "${LATITUDE}N" "${LONGITUDE}E") || eout "${FUNCTNAME}() : rjd-sunwait.sunwait renvoie une erreur. Paramètres passés : ${day}/${month}/${year}"
-    #     debug_ "Sunwait : Paramètres trouvés pour demain : Lever du soleil à ${sunrise}"
-    #     schedule="${sunrise}:00"
-    # else
-        ! schedule=$(mysql -D "raspi_general" -N -r -e "SELECT lever FROM cycle_jour_nuit WHERE journee = '$(date -d "tomorrow" +%d%m)'") && fout "Impossible de récupérer la date du lever du lendemain" && return 1
-        [[ ! $schedule =~ ^([0-9][0-9]:){2}([0-9][0-9])$ ]] && fout "La date récupérée pour le lever du lendemain n'est pas au bon format. Date récupérée : '${schedule}'" && return 1
-        schedule=$(( $(date -d "${schedule}" +%s) + 86400 ))
-    # fi
-    echo "$schedule"
+    local tomorrow_ut=$(date -d "tomorrow" "+%s")
+
+    [[ -n $SOLUNAR_CMD ]] && schedule=$(get_schedule_from_ut_solunar ${tomorrow_ut}) && echo "${schedule}" && return 0
+    schedule=$(get_schedule_from_ut_db ${tomorrow_ut}) && echo "${schedule}" && return 0
+
+    fout "${FUNCNAME}() : Impossible de trouver les horaires avec les moyens disponibles."
+    return 1
 }
 
 convert_readable_date_from_ut(){
