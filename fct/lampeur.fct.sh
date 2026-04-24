@@ -352,8 +352,8 @@ get_ut_tomorrows_sunset(){
     local schedule
     local tomorrow_ut=$(date -d "tomorrow" "+%s")
 
-    [[ -n $SOLUNAR_CMD ]] && schedule=$(get_schedule_from_ut_solunar ${tomorrow_ut}) && echo "${schedule}" && return 0
-    schedule=$(get_schedule_from_ut_db ${tomorrow_ut}) && echo "${schedule}" && return 0
+    [[ -n $SOLUNAR_CMD ]] && schedule=$(get_schedule_from_ut_solunar ${tomorrow_ut}) && echo "${schedule%% *}" && return 0
+    schedule=$(get_schedule_from_ut_db ${tomorrow_ut}) && echo echo "${schedule%% *}" && return 0
 
     fout "${FUNCNAME}() : Impossible de trouver les horaires avec les moyens disponibles."
     return 1
