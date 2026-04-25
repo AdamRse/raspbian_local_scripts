@@ -82,6 +82,8 @@ set_check_globals(){
     refresh_opt
 }
 
+# Teste si l'utilisateur a les droits pour contrôler le gpio
+# return true|exit
 is_gpio_user(){
     if groups "$USER" | grep -q "\bgpio\b" || [[ $EUID -eq 0 ]]; then
         lout "✅ L'utilisateur a bien accès au groupe gpio"
