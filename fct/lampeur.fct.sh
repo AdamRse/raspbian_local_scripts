@@ -1,3 +1,4 @@
+# Vérifie si les paquets nécéssaires ou conseillés sont installés
 check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à la fin
     command -v mysql &> /dev/null ||eout "La base de données mysql est nécéssaire, veuillez installer mysql/mariadb manuellement. Arrêt du programme."
 
