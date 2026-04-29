@@ -112,6 +112,7 @@ test_db_connect(){
     lout "✅ Connexion aux tables mysql réussies"
 }
 
+# Renvoie le message d'erreur, le double switch, et quitte le programme
 # return exit
 trigger_error_delay(){
     local message=${1}
