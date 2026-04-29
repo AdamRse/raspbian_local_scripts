@@ -230,6 +230,8 @@ order_next_switch(){
     return 0
 }
 
+# Donne le délai en secondes pour l'attente météo, pour moment où la fonction est appelée
+# return int|false
 get_weather_delay(){
     local weather_delay_sec
     local clouds_percent
