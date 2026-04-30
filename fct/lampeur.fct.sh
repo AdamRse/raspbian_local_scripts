@@ -300,12 +300,12 @@ refresh_opt(){
     debug_ "Suspend mode : ${SUSPEND_MODE}"
 }
 
+# Envoie un signal lumineux via la lampe
 double_switch_signal(){
     switch_lampe
     sleep 1
     switch_lampe
     sleep 1
-    return 0
 }
 
 # Retourne la date de lever et de coucher du soleil pour la journée donnée en temps UNIX, en utilisant solunar (par defaut : aujourd'hui)
