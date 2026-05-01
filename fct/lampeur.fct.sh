@@ -357,6 +357,8 @@ get_todays_schedule(){
     fout "${FUNCNAME}() : Impossible de trouver les horaires avec les moyens disponibles."
     return 1
 }
+# Renvoi le temps UNIX du lever du soleil du lendemain
+# retun int|false
 get_ut_tomorrows_sunset(){
     local schedule
     local ut_date
