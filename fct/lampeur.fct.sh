@@ -345,6 +345,9 @@ get_schedule_from_ut_db(){
     [[ ! $schedule =~ ^([0-9][0-9]:){2}[0-9][0-9][[:space:]]([0-9][0-9]:){2}[0-9][0-9]$ ]] && wout "${FUNCNAME}() : La base de donnée ne retourne pas d'horaires au bon format : '${schedule}'" && return 1
     echo "$schedule"
 }
+
+# Renvoie l'heure de lever et de coucher d'aujourd'hui
+# return "<HH:MM:SS> <HH:MM:SS>"|false
 get_todays_schedule(){
     local schedule
 
