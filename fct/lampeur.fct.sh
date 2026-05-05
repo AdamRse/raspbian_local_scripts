@@ -1,4 +1,5 @@
 # Vérifie si les paquets nécéssaires ou conseillés sont installés
+# return true|exit
 check_requirements(){ # A modifier, il faudra fa_ire un seul update upgrade à la fin
     command -v mysql &> /dev/null ||eout "La base de données mysql est nécéssaire, veuillez installer mysql/mariadb manuellement. Arrêt du programme."
 
@@ -357,6 +358,7 @@ get_todays_schedule(){
     fout "${FUNCNAME}() : Impossible de trouver les horaires avec les moyens disponibles."
     return 1
 }
+
 # Renvoi le temps UNIX du lever du soleil du lendemain
 # retun int|false
 get_ut_tomorrows_sunset(){
