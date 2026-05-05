@@ -373,6 +373,9 @@ get_ut_tomorrows_sunset(){
     echo $ut_date
 }
 
+# Convertit un timestamp en dade lisible
+# $1    : given_date    : <timestamp>   : Un timestamp
+# return string|"msg erreur"+false
 convert_readable_date_from_ut(){
     local given_date=${1}
     local calculated_date
