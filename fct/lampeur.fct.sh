@@ -133,6 +133,7 @@ switch_lampe(){
     bash $SWITCH_SCRIPT_PATH $GPIO_ID $force_switch ||eout "Impossible de switcher le GPIO ${GPIO_ID}, vérifiez le droits de l'utilisateur du script, il doit accéder au groupe 'gpio'"
 }
 
+# Attention, 06/05/2026 19:58:00 : déclenchement une heure trop tôt à caue de la météo, à priori ça a fonctionné à l'envers
 # Gère l'ordre de marche ou d'arrêt après un délai, gère SKIP_ON, SKIP_OFF et SUSPEND_MODE
 # $1    : order_type        : 0|1   : Ordonne l'arrêt (0) ou l'allumage (1) de la lampe
 # $2    : waiting_time_sec  : int   : Délai en secondes après lequel le déclenchement sera fait
