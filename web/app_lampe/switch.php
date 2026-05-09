@@ -2,7 +2,7 @@
 
 function switchgpio($gpio, $force = null){
     $b1 = exec('echo "'.$gpio.'" > /sys/class/gpio/export', $out1, $err1);
-    $b2="Le gpio$gpio n'a pas pu être ouvert (".__FILE__." ligne ".__LINE__.")";
+    $b2="Le gpio$gpio n'a pas pu être ouvert";
     if(file_exists("/sys/class/gpio/gpio".($gpio+512)."/value")){
         if($force===null)
             $b2 = exec('bash /opt/raspbian_local_scripts/lampe_switch_pi_OS.sh '.$gpio, $out2, $idErr2);
