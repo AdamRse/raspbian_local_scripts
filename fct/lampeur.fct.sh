@@ -158,7 +158,7 @@ order_next_switch(){
         if ((waiting_time_sec < 0 )); then
             waiting_time_sec_calculated_negative=$waiting_time_sec
             waiting_time_sec=0
-            debug_ "Remise à 0 pour cause de temps négatif"
+            debug_ "Remise à 0 pour cause de temps négatif, sauvegrarde de waiting_time_sec_calculated_negative=${waiting_time_sec_calculated_negative}"
         fi
     fi
     debug_ "Pause de $waiting_time_sec secondes avant d'effectuer l'ordre"
@@ -228,6 +228,7 @@ order_next_switch(){
     fi
 
     # On réapplique le délai enlevé par la fonction météo, sinon on va refaire le calcul pour la même journée. On cas de SKIP_ON, il seront tous décrémentés jusqu'à 0.
+    debug_ "sleep de correction : $(( MAX_WEATHER_DELAY_SEC - weather_delay_sec + 1 ))"
     [[ $order_type = 1 ]] && sleep $(( MAX_WEATHER_DELAY_SEC - weather_delay_sec + 1 ))
     return 0
 }
@@ -235,11 +236,13 @@ order_next_switch(){
 # Donne le délai en secondes pour l'attente météo, pour moment où la fonction est appelée
 # return int|false
 get_weather_delay(){
-    local weather_delay_sec
-    local clouds_percent
-    ! clouds_percent=$(get_clouds_percent_from_weather_api) && echo "${clouds_percent}" && return 1
-    ! weather_delay_sec=$(get_delay_from_clouds_percent ${clouds_percent}) && echo "${weather_delay_sec}" && return 1
-    echo $weather_delay_sec
+    # local weather_delay_sec
+    # local clouds_percent
+    # ! clouds_percent=$(get_clouds_percent_from_weather_api) && echo "${clouds_percent}" && return 1
+    # ! weather_delay_sec=$(get_delay_from_clouds_percent ${clouds_percent}) && echo "${weather_delay_sec}" && return 1
+    # echo $weather_delay_sec
+
+    echo "1888"
 }
 
 # Retourn un délai d'attente en fonction du % de couverture nuageuse, à partie de PARAM_WEATHER_DELAY dans le .env
